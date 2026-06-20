@@ -31,7 +31,13 @@ const baseNode = process.env.MDSITE_SEA_NODE || process.execPath;
 
 function run(cmd, args) {
   console.log(`\n$ ${cmd} ${args.join(' ')}`);
-  execFileSync(cmd, args, { stdio: 'inherit', cwd: root });
+  // Node refuses to spawn .cmd/.bat files on Windows without an explicit shell
+  // (hardened after a .bat/.cmd argument-injection CVE) — npm.cmd/npx.cmd need it.
+  const needsShell = isWin && /\.(cmd|bat)$/i.test(cmd);
+  // shell:true joins [file, ...args] with plain spaces, so pre-quote any arg
+  // that itself contains a space (e.g. a build path under a user dir).
+  const shellArgs = needsShell ? args.map((a) => (/\s/.test(a) ? `"${a}"` : a)) : args;
+  execFileSync(cmd, shellArgs, { stdio: 'inherit', cwd: root, shell: needsShell });
 }
 
 // SEA-capable Node binaries embed the fuse sentinel; launchers/shared builds don't.
