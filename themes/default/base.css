@@ -1102,16 +1102,17 @@ a.folder-label:hover {
    Popover (Link Hover Previews)
    ========================================================================== */
 .md-popover {
-  position: absolute;
+  position: fixed;
   z-index: 1000;
-  width: 400px;
+  width: 440px;
   max-width: 90vw;
-  max-height: 300px;
-  background-color: var(--color-surface);
+  max-height: 280px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, white 4%), var(--color-surface));
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 16px;
   color: var(--color-text);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 6px 18px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
@@ -1134,10 +1135,29 @@ a.folder-label:hover {
 }
 
 .md-popover-inner {
-  padding: 1.5rem;
+  padding: 1rem 1rem 0.9rem;
   overflow-y: auto;
-  max-height: 300px;
-  font-size: 0.9em;
+  max-height: 280px;
+  font-size: 0.94rem;
+}
+
+.md-popover-summary {
+  margin: 0.55rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+
+.md-popover-footer {
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  word-break: break-all;
+}
+
+.md-popover-footer span {
+  display: block;
 }
 
 .md-popover-inner h1 {

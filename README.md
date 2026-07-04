@@ -84,10 +84,16 @@ watcher does not treat generated pages as source content.
 ## Docs
 
 - `mdgarden update` upgrades the current install when a new release is available
+- `mdgarden update --background` runs the update detached and returns immediately
 - `npm run vault:dev` previews the bundled sample vault at `http://localhost:3000`
 - `npm run vault:build` builds the sample vault into `.vault-site/`
 - `npm run site:dev -- /absolute/notes/path -o /tmp/mdgarden-site` previews an external vault
 - `CONTRIBUTING.md` covers development commands and the visual-check workflow
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development commands, automated
+tests, and the bundled `test_vault/` visual-check workflow.
 
 ## License
 

@@ -73,13 +73,18 @@ mdgarden config unset <key>        # remove a key, falling back to default
 
 ### `mdgarden update`
 
-Update `mdgarden` to the latest available version. The command chooses the
-right path for the current install:
+Update `mdgarden` to the latest available version.
 
-- Standalone binary: re-runs the bundled installer against the current install
-  directory.
-- Homebrew: runs `brew upgrade mdgarden`.
-- npm: runs `npm install -g mdgarden@latest`.
+| Flag | Description |
+|---|---|
+| `-b, --background` | Run the update in the background and return immediately |
+
+Update behavior depends on the install source:
+
+- standalone installs re-run the bundled installer against the current binary
+  directory;
+- Homebrew installs use `brew upgrade mdgarden`;
+- npm installs use `npm install -g mdgarden@latest`.
 
 ### `mdgarden publish [contentDir]`
 
