@@ -5,6 +5,7 @@ import { build } from '../core/build.js';
 import { serve } from './serve.js';
 import { initSite, canPrompt, configExists, redesignSite, runConfigWizard } from './wizard.js';
 import { publish } from './publish.js';
+import { buildUpdatePlan, runUpdatePlan } from './update.js';
 import { VERSION } from '../index.js';
 import { getConfigValue, loadConfig, parseConfigValue, setConfigValue, unsetConfigValue } from '../core/config.js';
 
@@ -201,6 +202,25 @@ cli
       }
     },
   );
+
+cli
+  .command('update', 'Update mdgarden to the latest available version')
+  .action(async () => {
+    try {
+      const plan = buildUpdatePlan();
+      console.log(`Updating via ${plan.source}...`);
+      console.log(plan.note);
+      await runUpdatePlan(plan);
+      if (!plan.detached) {
+        console.log('✓ Update complete');
+      } else {
+        console.log('✓ Update scheduled');
+      }
+    } catch (err) {
+      console.error(`✗ Update failed: ${(err as Error).message}`);
+      process.exitCode = 1;
+    }
+  });
 
 cli
   .command('publish [contentDir]', 'Build and deploy to GitHub Pages or Cloudflare Pages')

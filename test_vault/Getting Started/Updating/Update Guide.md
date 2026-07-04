@@ -12,7 +12,7 @@ How you update depends on how you [[Getting Started/Download|installed]]
 ## npm
 
 ```bash
-npm update -g mdgarden
+npm install -g mdgarden@latest
 ```
 
 ## Homebrew
@@ -23,8 +23,21 @@ brew upgrade mdgarden
 
 ## Standalone binary
 
-Re-run the same install script you used the first time — it always fetches
-the latest release:
+Use the built-in updater:
+
+```bash
+mdgarden update
+```
+
+It detects the install type automatically:
+
+- standalone installs re-run the bundled installer against the current binary
+  directory;
+- Homebrew installs use `brew upgrade mdgarden`;
+- npm installs use `npm install -g mdgarden@latest`.
+
+If you prefer, you can still re-run the same install script you used the first
+time — it always fetches the latest release:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/THANSHEER/mdgarden/main/scripts/install.sh | sh

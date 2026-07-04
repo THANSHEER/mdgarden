@@ -1,14 +1,12 @@
 name: Release
 
-# Fires when you push a version tag, e.g. `git tag v0.1.0 && git push --tags`.
+# Fires when you push a version tag, e.g. `git tag v0.3.0 && git push --tags`.
 # Publishes: npm package, standalone binaries (GitHub Release assets), and an
 # updated Homebrew formula in the tap repo.
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'package.json'
+    tags:
+      - 'v*'
 
 permissions:
   contents: write # create the release + upload assets

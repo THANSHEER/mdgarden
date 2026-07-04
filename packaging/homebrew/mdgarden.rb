@@ -10,27 +10,27 @@
 class Mdgarden < Formula
   desc "Turn a folder of Markdown notes into a fast static website"
   homepage "https://github.com/THANSHEER/mdgarden"
-  version "0.1.0"
-  license "GPL-3.0-or-later"
+  version "0.3.0"
+  license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.1.0/mdgarden-darwin-arm64.tar.gz"
+      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.3.0/mdgarden-darwin-arm64.tar.gz"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
     on_intel do
-      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.1.0/mdgarden-darwin-x64.tar.gz"
+      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.3.0/mdgarden-darwin-x64.tar.gz"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.1.0/mdgarden-linux-arm64.tar.gz"
+      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.3.0/mdgarden-linux-arm64.tar.gz"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
     on_intel do
-      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.1.0/mdgarden-linux-x64.tar.gz"
+      url "https://github.com/THANSHEER/mdgarden/releases/download/v0.3.0/mdgarden-linux-x64.tar.gz"
       sha256 "0000000000000000000000000000000000000000000000000000000000000000"
     end
   end

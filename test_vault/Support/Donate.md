@@ -7,7 +7,7 @@ tags: [about, donate]
 # Donate
 
 `mdgarden` is free, open-source software released under
-[GPL-3.0-or-later](https://github.com/THANSHEER/mdgarden/blob/main/LICENSE).
+[MIT](https://github.com/THANSHEER/mdgarden/blob/main/LICENSE).
 It costs nothing to use, but it does cost time to maintain — if it's useful
 to you, here's how to help.
 

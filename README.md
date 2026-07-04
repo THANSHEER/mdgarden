@@ -4,25 +4,35 @@
 
 # mdgarden
 
-**Turn a folder of Markdown notes into a fast, themeable static website.**
+**A fast, framework-free static site generator for Markdown notes.**
 
-Search · Backlinks · Tags · Graph view · Dark mode · Math · Syntax highlighting — zero config, no runtime framework.
+Current release: `v0.3.0`
+
+Search, backlinks, tags, graph view, dark mode, math, and syntax highlighting.
+Zero config. No runtime framework.
 
 [![npm version](https://img.shields.io/npm/v/mdgarden.svg)](https://www.npmjs.com/package/mdgarden)
 [![npm downloads](https://img.shields.io/npm/dm/mdgarden.svg)](https://www.npmjs.com/package/mdgarden)
 [![CI](https://github.com/THANSHEER/mdgarden/actions/workflows/ci.yml/badge.svg)](https://github.com/THANSHEER/mdgarden/actions/workflows/ci.yml)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node version](https://img.shields.io/node/v/mdgarden.svg)](package.json)
 
-[Features](#features) · [Installation](#installation) · [Quick Start](#quick-start) · [Contributing](#contributing)
+[Why mdgarden](#why-mdgarden) · [Features](#features) · [Install](#install) · [Quick Start](#quick-start) · [Docs](#docs)
 
 </div>
 
 ---
 
-`mdgarden` turns an Obsidian vault—or any directory of Markdown files—into a
-static digital garden. The generated site has no frontend framework or server
-runtime.
+`mdgarden` turns an Obsidian vault, or any folder of Markdown files, into a
+clean digital garden. The generated site is static, responsive, and designed
+to stay lightweight without a frontend framework or server runtime.
+
+## Why mdgarden
+
+- It feels like a polished site, not a note dump.
+- It keeps the browser bundle small and the content pipeline simple.
+- It supports the workflows people already use in Markdown and Obsidian.
+- It ships with the pieces most note sites need out of the box.
 
 ## Features
 
@@ -31,47 +41,54 @@ runtime.
 - Responsive layouts, dark mode, syntax highlighting, Mermaid, and media embeds
 - Keyboard navigation, semantic landmarks, visible focus, and reduced-motion support
 - RSS, sitemap, social metadata, aliases, and sub-path hosting
-- Five built-in themes with an interactive setup and scriptable configuration
+- Five built-in themes with interactive setup and scriptable configuration
 - Live reload, a plugin API, and CLI, library, and standalone-binary usage
 
-## Installation
+## Install
 
-The npm package requires Node.js 20.12 or newer:
+The npm package requires Node.js 20.12 or newer.
 
 ```bash
 npm install -g mdgarden
 ```
 
-On macOS, install with Homebrew using
-`brew tap THANSHEER/tap && brew install mdgarden`. Standalone downloads for
-macOS, Linux, and Windows are available from
+On macOS, install with Homebrew:
+
+```bash
+brew tap THANSHEER/tap && brew install mdgarden
+```
+
+Standalone downloads for macOS, Linux, and Windows are available from
 [GitHub Releases](https://github.com/THANSHEER/mdgarden/releases).
 
 ## Quick Start
 
 ```bash
-# Point mdgarden at a folder of notes and build a static site
+# Build a site from a notes folder
 mdgarden build ./my-notes -o ./dist
 
 # Create sample content and configuration
 mdgarden init ./my-notes
 
-# Live-preview while you write, with auto-rebuild on save
+# Preview locally with auto-rebuild
 mdgarden serve ./my-notes -o ./preview
 
-# Change the design or a configuration value
+# Change the theme or configuration
 mdgarden redesign ./my-notes --theme forest -y
 mdgarden config set site.author "Your Name" -c ./my-notes/mdgarden.config.json
 ```
 
 Keep the output directory outside the notes folder when using `serve`, so the
-file watcher does not process generated pages as content.
+watcher does not treat generated pages as source content.
 
-## Contributing
+## Docs
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development commands, automated
-tests, and the bundled `test_vault/` visual-check workflow.
+- `mdgarden update` upgrades the current install when a new release is available
+- `npm run vault:dev` previews the bundled sample vault at `http://localhost:3000`
+- `npm run vault:build` builds the sample vault into `.vault-site/`
+- `npm run site:dev -- /absolute/notes/path -o /tmp/mdgarden-site` previews an external vault
+- `CONTRIBUTING.md` covers development commands and the visual-check workflow
 
 ## License
 
-[GPL-3.0-or-later](LICENSE) © 2026 Mohammed Thanseer
+[MIT](LICENSE) © 2026 Mohammed Thanseer
