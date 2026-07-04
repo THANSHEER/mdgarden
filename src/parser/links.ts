@@ -1,4 +1,4 @@
-import GithubSlugger, { slug as slugAnchor } from 'github-slugger';
+import { slug as slugAnchor } from 'github-slugger';
 import type {
   Asset,
   EmbedResolution,
@@ -8,6 +8,8 @@ import type {
 } from '../types.js';
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif', 'bmp', 'ico']);
+export const VIDEO_EXTS = new Set(['mp4', 'webm', 'mov', 'ogv']);
+export const AUDIO_EXTS = new Set(['mp3', 'ogg', 'wav', 'm4a']);
 
 // NOTE: basePath is a module-level singleton. This is intentional for the
 // single-threaded CLI use-case. If build() is called concurrently (e.g. in
@@ -176,11 +178,17 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
 
   const resolveEmbed = (target: string, alias: string): EmbedResolution => {
     const ext = target.split('.').pop()?.toLowerCase() ?? '';
+    const alt = alias || basename(target).replace(/\.[^.]+$/, '');
     if (IMAGE_EXTS.has(ext)) {
       const src = lookupAssetUrl(index, target) ?? '';
-      const alt = alias || basename(target).replace(/\.[^.]+$/, '');
       const dims = index.assetDims.get(src);
       return { kind: 'image', src, alt, width: dims?.width, height: dims?.height };
+    }
+    if (VIDEO_EXTS.has(ext)) {
+      return { kind: 'video', src: lookupAssetUrl(index, target) ?? '', alt };
+    }
+    if (AUDIO_EXTS.has(ext)) {
+      return { kind: 'audio', src: lookupAssetUrl(index, target) ?? '', alt };
     }
     const slug = lookupPageSlug(index, target);
     if (slug === undefined) {
@@ -190,7 +198,8 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
     return { kind: 'note', url: urlForSlug(slug), title: alias || basename(target), resolved: true };
   };
 
-  return { resolveLink, resolveEmbed, outgoing, headings: [] };
-}
+  const lookupAssetDims = (src: string): { width: number; height: number } | undefined =>
+    index.assetDims.get(src);
 
-export { GithubSlugger };
+  return { resolveLink, resolveEmbed, lookupAssetDims, outgoing, headings: [] };
+}

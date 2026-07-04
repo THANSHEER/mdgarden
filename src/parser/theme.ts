@@ -1,5 +1,5 @@
 import baseCss from '../../themes/default/base.css';
-import type { MdsiteConfig, ThemeColors } from '../types.js';
+import type { MdgardenConfig, ThemeColors } from '../types.js';
 
 function colorVars(c: ThemeColors): string {
   return [
@@ -13,13 +13,12 @@ function colorVars(c: ThemeColors): string {
   ].join(';');
 }
 
-/** Build site stylesheet. */
-export function buildStyles(config: MdsiteConfig, customCss = ''): string {
+/** Build site stylesheet. Theme is decided entirely at build time (config/`redesign`) — the site ships no UI to switch it. */
+export function buildStyles(config: MdgardenConfig, customCss = ''): string {
   const { colors, fonts, darkMode } = config.theme;
   const light = colorVars(colors.light);
   const dark = colorVars(colors.dark);
-  const fontVars =
-    `--font-heading:${fonts.heading};--font-body:${fonts.body};--font-code:${fonts.code};`;
+  const fontVars = `--font-heading:${fonts.heading};--font-body:${fonts.body};--font-code:${fonts.code};`;
 
   let css = '';
   if (darkMode === 'dark') {
@@ -27,11 +26,10 @@ export function buildStyles(config: MdsiteConfig, customCss = ''): string {
   } else if (darkMode === 'light') {
     css += `:root{${light};${fontVars}}\n`;
   } else {
+    // 'auto': light by default, dark only via the OS preference — there's no
+    // on-site control, so this is the sole source of dark mode.
     css += `:root{${light};${fontVars}}\n`;
-    css += `:root[data-theme="dark"]{${dark}}\n`;
-    if (darkMode === 'auto' || darkMode === 'toggle') {
-      css += `@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){${dark}}}\n`;
-    }
+    css += `@media (prefers-color-scheme:dark){:root{${dark}}}\n`;
   }
 
   css += baseCss;

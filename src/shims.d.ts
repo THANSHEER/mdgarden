@@ -16,3 +16,9 @@ declare module '*.css' {
   const content: string;
   export default content;
 }
+
+// View Transitions API — not yet in TS's bundled DOM lib. Optional because most
+// browsers don't support it yet; callers must feature-detect before calling it.
+interface Document {
+  startViewTransition?(callback: () => void | Promise<void>): { finished: Promise<void> };
+}

@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { MdsiteConfig, ThemeColors } from '../types.js';
+import type { MdgardenConfig, ThemeColors } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Theme presets
@@ -112,7 +112,7 @@ export function findPreset(id: string): ThemePreset | undefined {
 // Default config & loading
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_CONFIG: MdsiteConfig = {
+export const DEFAULT_CONFIG: MdgardenConfig = {
   site: {
     title: 'My Notes',
     description: 'Notes published with mdgarden',
@@ -122,7 +122,7 @@ export const DEFAULT_CONFIG: MdsiteConfig = {
   },
   theme: {
     name: 'default',
-    darkMode: 'toggle',
+    darkMode: 'auto',
     colors: {
       light: {
         background: '#faf8f8',
@@ -150,7 +150,6 @@ export const DEFAULT_CONFIG: MdsiteConfig = {
     },
   },
   nav: [],
-  footer: {},
   features: {
     search: true,
     backlinks: true,
@@ -196,12 +195,77 @@ function deepMerge<T>(base: T, override: unknown): T {
 }
 
 /** Resolve configuration. */
-export function resolveConfig(input: unknown): MdsiteConfig {
+export function resolveConfig(input: unknown): MdgardenConfig {
   return deepMerge(DEFAULT_CONFIG, input);
 }
 
+// ---------------------------------------------------------------------------
+// Dotted-path config access (powers `mdgarden config get/set/unset`)
+// ---------------------------------------------------------------------------
+
+// Property names that resolve to the shared Object.prototype instead of a real
+// data field. Without this guard, "mdgarden config set __proto__.x y" would
+// walk onto Object.prototype itself and pollute every plain object in the process.
+const UNSAFE_KEY_PARTS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function splitKey(key: string): string[] {
+  const parts = key.split('.').filter(Boolean);
+  if (parts.length === 0) throw new Error('Config key must not be empty');
+  if (parts.some((p) => UNSAFE_KEY_PARTS.has(p))) {
+    throw new Error(`Config key must not contain "${[...UNSAFE_KEY_PARTS].join('", "')}"`);
+  }
+  return parts;
+}
+
+/** Read a nested value by dotted path, e.g. "site.author" or "theme.colors.light.primary". */
+export function getConfigValue(config: MdgardenConfig, key: string): unknown {
+  let cur: unknown = config;
+  for (const part of splitKey(key)) {
+    if (!isPlainObject(cur) && !Array.isArray(cur)) return undefined;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  return cur;
+}
+
+/** Parse a raw CLI argument into a JS value: JSON when it parses (numbers, booleans, arrays, objects), else the raw string. */
+export function parseConfigValue(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/** Return a new config with `value` written at dotted path `key`, creating intermediate objects as needed. */
+export function setConfigValue(config: MdgardenConfig, key: string, value: unknown): MdgardenConfig {
+  const parts = splitKey(key);
+  const clone = structuredClone(config) as unknown as Record<string, unknown>;
+  let cur = clone;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const next = cur[parts[i]];
+    if (!isPlainObject(next)) cur[parts[i]] = {};
+    cur = cur[parts[i]] as Record<string, unknown>;
+  }
+  cur[parts[parts.length - 1]] = value;
+  return clone as unknown as MdgardenConfig;
+}
+
+/** Return a new config with the dotted path `key` removed (falls back to the default on next load). */
+export function unsetConfigValue(config: MdgardenConfig, key: string): MdgardenConfig {
+  const parts = splitKey(key);
+  const clone = structuredClone(config) as unknown as Record<string, unknown>;
+  let cur = clone;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const next = cur[parts[i]];
+    if (!isPlainObject(next)) return clone as unknown as MdgardenConfig;
+    cur = next as Record<string, unknown>;
+  }
+  delete cur[parts[parts.length - 1]];
+  return clone as unknown as MdgardenConfig;
+}
+
 export interface LoadedConfig {
-  config: MdsiteConfig;
+  config: MdgardenConfig;
   /** Directory the config lives in (base for resolving contentDir/outDir/customCss). */
   baseDir: string;
   /** Path the config was loaded from, or null when defaults were used. */

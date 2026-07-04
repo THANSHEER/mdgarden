@@ -5,9 +5,6 @@
 import mermaid from 'mermaid';
 
 function currentTheme(): 'dark' | 'default' {
-  const explicit = document.documentElement.dataset.theme;
-  if (explicit === 'dark') return 'dark';
-  if (explicit === 'light') return 'default';
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
 }
 
@@ -30,6 +27,5 @@ async function renderAll(): Promise<void> {
 
 void renderAll();
 
-// Re-render on theme change.
-const observer = new MutationObserver(() => void renderAll());
-observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+// Re-render if the OS light/dark preference changes (theme is otherwise fixed at build time).
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', () => void renderAll());

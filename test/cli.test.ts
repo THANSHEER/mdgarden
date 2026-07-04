@@ -31,7 +31,7 @@ describe('mdgarden --help / --version', () => {
   it('lists all commands', async () => {
     const { stdout, code } = await runCli(['--help'], process.cwd());
     expect(code).toBe(0);
-    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'publish']) {
+    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'config', 'publish']) {
       expect(stdout).toContain(cmd);
     }
   });
@@ -98,6 +98,75 @@ describe('mdgarden redesign', () => {
     const { stderr, code } = await runCli(['redesign', '.', '--theme', 'no-such-theme', '-y'], dir);
     expect(code).toBe(1);
     expect(stderr).toContain('Unknown theme');
+  });
+});
+
+describe('mdgarden config get/set/unset', () => {
+  let dir: string;
+  afterEach(async () => {
+    if (dir) await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('set writes a nested key, get reads it back', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-'));
+    await runCli(['init', '.', '-y'], dir);
+
+    const set = await runCli(['config', 'set', 'site.author', 'Jane Doe'], dir);
+    expect(set.code).toBe(0);
+    expect(set.stdout).toContain('✓ Set site.author = Jane Doe');
+
+    const get = await runCli(['config', 'get', 'site.author'], dir);
+    expect(get.code).toBe(0);
+    expect(get.stdout.trim()).toBe('Jane Doe');
+
+    const config = JSON.parse(await fs.readFile(path.join(dir, 'mdgarden.config.json'), 'utf8'));
+    expect(config.site.author).toBe('Jane Doe');
+  });
+
+  it('set JSON-parses values that look like booleans/numbers/objects', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-json-'));
+    await runCli(['init', '.', '-y'], dir);
+
+    await runCli(['config', 'set', 'features.graph', 'false'], dir);
+    const config = JSON.parse(await fs.readFile(path.join(dir, 'mdgarden.config.json'), 'utf8'));
+    expect(config.features.graph).toBe(false);
+  });
+
+  it('get with no key prints the whole config as JSON', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-all-'));
+    await runCli(['init', '.', '-y'], dir);
+
+    const { stdout, code } = await runCli(['config', 'get'], dir);
+    expect(code).toBe(0);
+    expect(JSON.parse(stdout).site).toBeDefined();
+  });
+
+  it('unset removes a key', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-unset-'));
+    await runCli(['init', '.', '-y'], dir);
+    await runCli(['config', 'set', 'site.logo', '"🌱"'], dir);
+
+    const unset = await runCli(['config', 'unset', 'site.logo'], dir);
+    expect(unset.code).toBe(0);
+    expect(unset.stdout).toContain('✓ Unset site.logo');
+
+    const config = JSON.parse(await fs.readFile(path.join(dir, 'mdgarden.config.json'), 'utf8'));
+    expect(config.site.logo).toBeUndefined();
+  });
+
+  it('set fails clearly when no config exists yet', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-noconfig-'));
+    const { stderr, code } = await runCli(['config', 'set', 'site.author', 'Jane'], dir);
+    expect(code).toBe(1);
+    expect(stderr).toContain('mdgarden init');
+  });
+
+  it('get of an unknown key fails clearly', async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cli-config-unknown-'));
+    await runCli(['init', '.', '-y'], dir);
+    const { stderr, code } = await runCli(['config', 'get', 'site.nope'], dir);
+    expect(code).toBe(1);
+    expect(stderr).toContain('No such config key');
   });
 });
 

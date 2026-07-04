@@ -8,6 +8,8 @@ import { loadConfig } from '../core/config.js';
 
 const LIVE_RELOAD =
   `<script>(function(){try{var s=new EventSource('/__mdgarden_livereload');` +
+  `var opened=false;` +
+  `s.onopen=function(){if(opened)location.reload();opened=true};` +
   `s.onmessage=function(){location.reload()};}catch(e){}})();</script>`;
 
 const MIME: Record<string, string> = {
@@ -37,10 +39,26 @@ export interface ServeOptions extends BuildOptions {
   port?: number;
 }
 
-function injectReload(html: string): string {
+export function injectReload(html: string): string {
   return html.includes('</body>')
     ? html.replace('</body>', `${LIVE_RELOAD}</body>`)
     : html + LIVE_RELOAD;
+}
+
+/**
+ * Resolve a request URL to an absolute path inside outDir, or null if the
+ * request would escape it. Uses path.relative + a ".." check rather than a
+ * string-prefix check — a prefix check alone lets "../public-evil/x" through
+ * when outDir is ".../public", since ".../public-evil".startsWith(".../public")
+ * is true despite "public-evil" being a sibling directory, not a subdirectory.
+ */
+export function resolveServedPath(outDir: string, requestUrl: string): string | null {
+  let rel = decodeURIComponent(requestUrl);
+  if (rel.endsWith('/')) rel += 'index.html';
+  const filePath = path.join(outDir, rel);
+  const fromOutDir = path.relative(outDir, filePath);
+  if (fromOutDir.startsWith('..') || path.isAbsolute(fromOutDir)) return null;
+  return filePath;
 }
 
 /** Build, serve, and watch. Resolves only on a fatal listen error (otherwise runs forever). */
@@ -61,7 +79,13 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
 
   const clients = new Set<http.ServerResponse>();
   const reloadAll = (): void => {
-    for (const c of clients) c.write('data: reload\n\n');
+    for (const client of clients) {
+      if (client.destroyed || client.writableEnded) {
+        clients.delete(client);
+        continue;
+      }
+      client.write('data: reload\n\n');
+    }
   };
 
   const server = http.createServer(async (req, res) => {
@@ -72,17 +96,22 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
       });
       res.write('retry: 1000\n\n');
       clients.add(res);
-      req.on('close', () => clients.delete(res));
+      const heartbeat = setInterval(() => {
+        if (!res.destroyed && !res.writableEnded) res.write(': heartbeat\n\n');
+      }, 15_000);
+      req.on('close', () => {
+        clearInterval(heartbeat);
+        clients.delete(res);
+      });
       return;
     }
 
-    let rel = decodeURIComponent(url);
-    if (rel.endsWith('/')) rel += 'index.html';
-    const filePath = path.join(outDir, rel);
-    if (!filePath.startsWith(outDir)) {
+    const filePath = resolveServedPath(outDir, url);
+    if (!filePath) {
       res.writeHead(403).end('Forbidden');
       return;
     }
@@ -91,14 +120,20 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
       const data = await fs.readFile(filePath);
       const ext = path.extname(filePath).toLowerCase();
       if (ext === '.html') {
-        res.writeHead(200, { 'Content-Type': MIME['.html'] }).end(injectReload(data.toString('utf8')));
+        res.writeHead(200, {
+          'Content-Type': MIME['.html'],
+          'Cache-Control': 'no-store',
+        }).end(injectReload(data.toString('utf8')));
       } else {
         res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' }).end(data);
       }
     } catch {
       try {
         const nf = await fs.readFile(path.join(outDir, '404.html'), 'utf8');
-        res.writeHead(404, { 'Content-Type': MIME['.html'] }).end(injectReload(nf));
+        res.writeHead(404, {
+          'Content-Type': MIME['.html'],
+          'Cache-Control': 'no-store',
+        }).end(injectReload(nf));
       } catch {
         res.writeHead(404, { 'Content-Type': MIME['.html'] }).end('<h1>404</h1>');
       }
@@ -123,11 +158,26 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
     }, 120);
   };
 
+  // When outDir lives inside contentDir (e.g. `-o ./notes/.site`), every
+  // rebuild writes files the recursive watcher below would otherwise see as
+  // a content change — triggering another rebuild, forever. Filter those out.
+  const outDirRel = path.relative(contentDir, outDir);
+  const outDirIsInsideContent = outDirRel !== '' && !outDirRel.startsWith('..') && !path.isAbsolute(outDirRel);
+  const isOutDirEvent = (filename: string | null): boolean => {
+    if (!outDirIsInsideContent || !filename) return false;
+    const rel = path.normalize(filename);
+    return rel === outDirRel || rel.startsWith(outDirRel + path.sep);
+  };
+  const onContentChange = (_event: string, filename: string | null): void => {
+    if (isOutDirEvent(filename)) return;
+    schedule();
+  };
+
   const watchers: FSWatcher[] = [];
   try {
-    watchers.push(watch(contentDir, { recursive: true }, schedule));
+    watchers.push(watch(contentDir, { recursive: true }, onContentChange));
   } catch {
-    watchers.push(watch(contentDir, schedule));
+    watchers.push(watch(contentDir, onContentChange));
   }
   if (opts.configPath || baseDir) {
     const cfgFile = opts.configPath
@@ -139,11 +189,14 @@ export async function serve(opts: ServeOptions = {}): Promise<void> {
       /* no config file to watch */
     }
   }
-  process.on('SIGINT', () => {
+  const shutdown = (): void => {
     for (const w of watchers) w.close();
-    server.close();
-    process.exit(0);
-  });
+    for (const client of clients) client.end();
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 1_000).unref();
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 }
 
 /** Listen on `port`, trying the next few if it's in use. */

@@ -26,7 +26,7 @@ export interface ThemeColors {
   surface: string;
 }
 
-export type DarkModeMode = 'toggle' | 'auto' | 'light' | 'dark';
+export type DarkModeMode = 'auto' | 'light' | 'dark';
 
 export interface ThemeConfig {
   name: string;
@@ -40,11 +40,6 @@ export interface ThemeConfig {
 export interface NavItem {
   title: string;
   url: string;
-}
-
-export interface FooterConfig {
-  text?: string;
-  links?: Record<string, string>;
 }
 
 export interface FeatureFlags {
@@ -102,11 +97,10 @@ export interface DeployConfig {
   projectName?: string;
 }
 
-export interface MdsiteConfig {
+export interface MdgardenConfig {
   site: SiteConfig;
   theme: ThemeConfig;
   nav: NavItem[];
-  footer: FooterConfig;
   features: FeatureFlags;
   build: BuildConfig;
   /** Comment-widget settings (when `features.comments`). Optional. */
@@ -177,6 +171,8 @@ export interface Asset {
 
 export type EmbedResolution =
   | { kind: 'image'; src: string; alt: string; width?: number; height?: number }
+  | { kind: 'video'; src: string; alt: string }
+  | { kind: 'audio'; src: string; alt: string }
   | { kind: 'note'; url: string; title: string; resolved: boolean };
 
 export interface LinkResolution {
@@ -191,6 +187,8 @@ export interface LinkResolution {
 export interface RenderEnv {
   resolveLink: (target: string, anchor: string) => LinkResolution;
   resolveEmbed: (target: string, alias: string) => EmbedResolution;
+  /** Intrinsic pixel dimensions for an asset URL, when known (avoids layout shift). */
+  lookupAssetDims: (src: string) => { width: number; height: number } | undefined;
   /** Outgoing link slugs collected during this render. */
   outgoing: Set<string>;
   /** Headings collected during this render. */

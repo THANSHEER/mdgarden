@@ -5,11 +5,11 @@ import taskLists from 'markdown-it-task-lists';
 import { katex } from '@mdit/plugin-katex';
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs';
 import type StateCore from 'markdown-it/lib/rules_core/state_core.mjs';
-import { anchorSlug } from './links.js';
+import { anchorSlug, AUDIO_EXTS, VIDEO_EXTS } from './links.js';
 import { capitalize, escapeAttr, escapeHtml } from '../utils.js';
 import type { HighlightFn } from './highlight.js';
-import type { MdsitePlugin } from '../core/plugin.js';
-import type { MdsiteConfig, RenderEnv } from '../types.js';
+import type { MdgardenPlugin } from '../core/plugin.js';
+import type { MdgardenConfig, RenderEnv } from '../types.js';
 
 const OPEN_BRACKET = 0x5b; // [
 const BANG = 0x21; // !
@@ -60,6 +60,10 @@ function wikilinkRule(state: StateInline, silent: boolean): boolean {
     if (e.kind === 'image') {
       const dim = e.width && e.height ? ` width="${e.width}" height="${e.height}"` : '';
       html = `<img src="${escapeAttr(e.src)}" alt="${escapeAttr(e.alt)}" loading="lazy" decoding="async"${dim} class="md-embed">`;
+    } else if (e.kind === 'video') {
+      html = `<video src="${escapeAttr(e.src)}" controls preload="metadata" class="md-embed md-video">${escapeHtml(e.alt)}</video>`;
+    } else if (e.kind === 'audio') {
+      html = `<audio src="${escapeAttr(e.src)}" controls preload="metadata" class="md-embed md-audio">${escapeHtml(e.alt)}</audio>`;
     } else {
       const cls = e.resolved ? 'wikilink wikilink-embed' : 'wikilink wikilink-embed wikilink-broken';
       html = `<a href="${escapeAttr(e.url)}" class="${cls}">${escapeHtml(e.title)}</a>`;
@@ -180,12 +184,16 @@ export interface MarkdownOptions {
   /** Synchronous code highlighter (from createCodeHighlighter). */
   highlight?: HighlightFn;
   /** Plugins whose `markdown` hook extends the instance. */
-  plugins?: MdsitePlugin[];
+  plugins?: MdgardenPlugin[];
 }
 
 /** Create markdown-it parser. */
-export function createMarkdown(config: MdsiteConfig, options: MarkdownOptions = {}): MarkdownIt {
+export function createMarkdown(config: MdgardenConfig, options: MarkdownOptions = {}): MarkdownIt {
   const md = new MarkdownIt({
+    // `html: true` lets raw HTML in a note pass through unescaped — a deliberate
+    // choice, not an oversight: the markdown comes from the site owner's own
+    // vault (the same trust boundary as the build process itself), exactly like
+    // Jekyll/Hugo/Obsidian Publish. There is no untrusted-visitor content path.
     html: true,
     linkify: true,
     typographer: false,
@@ -208,8 +216,24 @@ export function createMarkdown(config: MdsiteConfig, options: MarkdownOptions = 
   const defaultImage = md.renderer.rules.image;
   md.renderer.rules.image = (tokens, idx, opts2, env, self) => {
     const token = tokens[idx];
+    const src = token.attrGet('src') ?? '';
+    const ext = src.split(/[?#]/)[0].split('.').pop()?.toLowerCase() ?? '';
+    const alt = token.attrGet('alt') ?? '';
+    if (VIDEO_EXTS.has(ext)) {
+      return `<video src="${escapeAttr(src)}" controls preload="metadata" class="md-video">${escapeHtml(alt)}</video>`;
+    }
+    if (AUDIO_EXTS.has(ext)) {
+      return `<audio src="${escapeAttr(src)}" controls preload="metadata" class="md-audio">${escapeHtml(alt)}</audio>`;
+    }
     if (!token.attrGet('loading')) token.attrSet('loading', 'lazy');
     if (!token.attrGet('decoding')) token.attrSet('decoding', 'async');
+    if (!token.attrGet('width')) {
+      const dims = (env as RenderEnv).lookupAssetDims?.(src);
+      if (dims) {
+        token.attrSet('width', String(dims.width));
+        token.attrSet('height', String(dims.height));
+      }
+    }
     return defaultImage
       ? defaultImage(tokens, idx, opts2, env, self)
       : self.renderToken(tokens, idx, opts2);

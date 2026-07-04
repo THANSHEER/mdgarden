@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { build } from '../src/core/build.js';
-import type { MdsitePlugin } from '../src/core/plugin.js';
+import type { MdgardenPlugin } from '../src/core/plugin.js';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const read = (dir: string, rel: string) => fs.readFile(path.join(dir, rel), 'utf8');
@@ -15,7 +15,7 @@ describe('plugin hooks', () => {
   let out: string;
   const pagesSeen: string[] = [];
 
-  const probe: MdsitePlugin = {
+  const probe: MdgardenPlugin = {
     name: 'probe',
     page(page) {
       pagesSeen.push(page.slug);

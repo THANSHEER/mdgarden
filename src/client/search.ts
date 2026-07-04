@@ -5,6 +5,11 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Escape for use inside a double-quoted HTML attribute. */
+function escapeAttr(s: string): string {
+  return escapeHtml(s).replace(/"/g, '&quot;');
+}
+
 /** Prefix a root-relative URL with the base path stored on the <html> element. */
 function withBase(url: string): string {
   const base = document.documentElement.dataset.base ?? '';
@@ -25,14 +30,19 @@ interface Doc {
 export function initSearch(): void {
   const button = document.querySelector<HTMLButtonElement>('[data-search-open]');
   if (!button) return;
-  const searchPlaceholder = button.dataset.placeholder || 'Search notes…';
+  const trigger = button;
+  const searchPlaceholder = trigger.dataset.placeholder || 'Search notes…';
+  const searchLabel = trigger.getAttribute('aria-label') || 'Search';
+  const closeLabel = trigger.dataset.closeLabel || 'Close';
+  const resultsLabel = trigger.dataset.resultsLabel || 'Search results';
 
   let mini: MiniSearch<Doc> | null = null;
   let loading = false;
   const docs = new Map<string, Doc>();
-  let modal: HTMLElement | null = null;
+  let modal: HTMLDialogElement | null = null;
   let input: HTMLInputElement | null = null;
   let results: HTMLElement | null = null;
+  let status: HTMLElement | null = null;
 
   async function ensureIndex(): Promise<void> {
     if (mini || loading) return;
@@ -56,13 +66,21 @@ export function initSearch(): void {
   function ensureModal(): void {
     if (modal) return;
     const placeholder = searchPlaceholder;
-    modal = document.createElement('div');
+    modal = document.createElement('dialog');
     modal.className = 'search-modal';
+    modal.setAttribute('aria-labelledby', 'mdgarden-search-title');
     modal.innerHTML =
-      '<div class="search-box"><input type="search"><ul class="search-results"></ul></div>';
+      `<div class="search-box">` +
+      `<h2 class="sr-only" id="mdgarden-search-title">${escapeHtml(searchLabel)}</h2>` +
+      `<div class="search-box-header"><input type="search" aria-controls="mdgarden-search-results">` +
+      `<button class="icon-button search-close" type="button" aria-label="${escapeAttr(closeLabel)}">×</button></div>` +
+      `<p class="sr-only" data-search-status aria-live="polite"></p>` +
+      `<ul class="search-results" id="mdgarden-search-results" aria-label="${escapeAttr(resultsLabel)}"></ul>` +
+      `</div>`;
     document.body.appendChild(modal);
     input = modal.querySelector('input');
     results = modal.querySelector('.search-results');
+    status = modal.querySelector('[data-search-status]');
     if (input) {
       input.placeholder = placeholder;
       input.setAttribute('aria-label', placeholder);
@@ -70,36 +88,62 @@ export function initSearch(): void {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) close();
     });
+    modal.querySelector<HTMLButtonElement>('.search-close')?.addEventListener('click', close);
+    modal.addEventListener('close', () => {
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    });
     input?.addEventListener('input', () => runQuery(input?.value ?? ''));
+    input?.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown') return;
+      const first = results?.querySelector<HTMLAnchorElement>('a');
+      if (!first) return;
+      e.preventDefault();
+      first.focus();
+    });
+    results?.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      const links = Array.from(results?.querySelectorAll<HTMLAnchorElement>('a') ?? []);
+      const current = links.indexOf(document.activeElement as HTMLAnchorElement);
+      if (current < 0) return;
+      e.preventDefault();
+      const direction = e.key === 'ArrowDown' ? 1 : -1;
+      links[(current + direction + links.length) % links.length]?.focus();
+    });
+    results?.addEventListener('click', () => close());
   }
 
   async function open(): Promise<void> {
     ensureModal();
-    await ensureIndex();
-    modal?.classList.add('is-open');
+    if (!modal?.open) modal?.showModal();
+    trigger.setAttribute('aria-expanded', 'true');
     input?.focus();
+    await ensureIndex();
     runQuery(input?.value ?? '');
   }
 
   function close(): void {
-    modal?.classList.remove('is-open');
+    if (modal?.open) modal.close();
   }
 
   function runQuery(query: string): void {
     if (!mini || !results) return;
     const q = query.trim();
     const hits = q ? mini.search(q).slice(0, 20) : [];
+    if (status) {
+      status.textContent = q ? `${hits.length} ${resultsLabel.toLocaleLowerCase()}` : '';
+    }
     results.innerHTML = hits
       .map((hit) => {
         const doc = docs.get(String(hit.id));
         if (!doc) return '';
         const excerpt = excerptFor(doc.content, q);
-        return `<li><a href="${doc.url}">${escapeHtml(doc.title)}<span class="search-result-excerpt">${escapeHtml(excerpt)}</span></a></li>`;
+        return `<li><a href="${escapeAttr(doc.url)}">${escapeHtml(doc.title)}<span class="search-result-excerpt">${escapeHtml(excerpt)}</span></a></li>`;
       })
       .join('');
   }
 
-  button.addEventListener('click', () => {
+  trigger.addEventListener('click', () => {
     void open();
   });
 

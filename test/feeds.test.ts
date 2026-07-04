@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildRobots, buildRss, buildSitemap } from '../src/features/feeds.js';
 import { setBasePath } from '../src/parser/links.js';
 import { DEFAULT_CONFIG } from '../src/core/config.js';
-import type { MdsiteConfig, Page } from '../src/types.js';
+import type { MdgardenConfig, Page } from '../src/types.js';
 
 afterEach(() => setBasePath(undefined));
 
@@ -49,7 +49,7 @@ describe('buildSitemap', () => {
 });
 
 describe('buildRss', () => {
-  const config: MdsiteConfig = {
+  const config: MdgardenConfig = {
     ...DEFAULT_CONFIG,
     site: { ...DEFAULT_CONFIG.site, title: 'My Garden', description: 'Notes', baseUrl: 'https://example.com' },
   };
@@ -84,14 +84,14 @@ describe('buildRobots', () => {
   });
 
   it('adds an absolute Sitemap line when baseUrl is set', () => {
-    const config: MdsiteConfig = { ...DEFAULT_CONFIG, site: { ...DEFAULT_CONFIG.site, baseUrl: 'https://example.com/' } };
+    const config: MdgardenConfig = { ...DEFAULT_CONFIG, site: { ...DEFAULT_CONFIG.site, baseUrl: 'https://example.com/' } };
     const txt = buildRobots(config);
     expect(txt).toContain('Sitemap: https://example.com/sitemap.xml');
   });
 
   it('honors a configured basePath in the Sitemap URL', () => {
     setBasePath('/notes');
-    const config: MdsiteConfig = { ...DEFAULT_CONFIG, site: { ...DEFAULT_CONFIG.site, baseUrl: 'https://example.com' } };
+    const config: MdgardenConfig = { ...DEFAULT_CONFIG, site: { ...DEFAULT_CONFIG.site, baseUrl: 'https://example.com' } };
     const txt = buildRobots(config);
     expect(txt).toContain('Sitemap: https://example.com/notes/sitemap.xml');
   });

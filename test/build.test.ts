@@ -89,7 +89,8 @@ describe('build (fixtures)', () => {
 
   it('renders mermaid fences as <pre class="mermaid"> and ships the chunk', async () => {
     const html = await read(out, 'concepts/diagram/index.html');
-    expect(html).toContain('<pre class="mermaid">');
+    expect(html).toMatch(/<pre\b[^>]*class="mermaid"[^>]*>/);
+    expect(html).toMatch(/<pre\b[^>]*tabindex="0"[^>]*class="mermaid"|<pre\b[^>]*class="mermaid"[^>]*tabindex="0"/);
     expect(html).toContain('graph TD');
     expect(await exists(out, 'mdgarden.mermaid.js')).toBe(true);
   });
@@ -191,7 +192,7 @@ describe('i18n', () => {
     out = path.join(dir, 'out');
     await fs.writeFile(
       path.join(dir, 'mdgarden.config.json'),
-      JSON.stringify({ ui: { onThisPage: 'Sur cette page', notes: 'Carnets' } }),
+      JSON.stringify({ ui: { onThisPage: 'Sur cette page', search: 'Recherche' } }),
     );
     await build({ cwd: dir, contentDir: fixtures, outDir: out });
   });
@@ -202,7 +203,7 @@ describe('i18n', () => {
   it('applies ui overrides to built-in strings', async () => {
     const html = await read(out, 'getting-started/index.html');
     expect(html).toContain('Sur cette page');
-    expect(html).toContain('Carnets');
+    expect(html).toContain('Recherche');
     expect(html).not.toContain('<h2>On this page</h2>');
   });
 });

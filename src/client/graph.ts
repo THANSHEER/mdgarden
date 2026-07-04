@@ -90,11 +90,13 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   if (!ctx) return;
 
   const dpr = window.devicePixelRatio || 1;
-  const width = container.clientWidth || 220;
+  let width = container.clientWidth || 220;
   const height = 220;
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   canvas.style.height = `${height}px`;
+  const graphLinks = container.querySelector<HTMLUListElement>('.graph-links ul');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const tooltip = document.createElement('div');
   tooltip.className = 'graph-tooltip';
@@ -111,8 +113,8 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     y: (y - view.offsetY) / view.scale,
   });
 
-  const cx = width / 2;
-  const cy = height / 2;
+  let cx = width / 2;
+  let cy = height / 2;
 
   // Mutable simulation state, rebuilt by setData() whenever the mode changes.
   let nodes: SimNode[] = [];
@@ -124,6 +126,21 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   function setData(sub: GraphData): void {
     if (rafId) cancelAnimationFrame(rafId);
     rafId = 0;
+    if (graphLinks) {
+      graphLinks.replaceChildren(
+        ...[...sub.nodes]
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map((node) => {
+            const item = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = node.url;
+            link.textContent = node.title;
+            if (node.id === slug) link.setAttribute('aria-current', 'page');
+            item.appendChild(link);
+            return item;
+          }),
+      );
+    }
     if (sub.nodes.length <= 1) {
       nodes = [];
       links = [];
@@ -148,7 +165,13 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
       .filter((l): l is { a: SimNode; b: SimNode } => !!l.a && !!l.b);
     frame = 0;
     settled = false;
-    rafId = requestAnimationFrame(loop);
+    if (reduceMotion) {
+      for (let i = 0; i < 180 && !settled; i++) settled = tick();
+      settled = true;
+      draw();
+    } else {
+      rafId = requestAnimationFrame(loop);
+    }
   }
 
   function tick(): boolean {
@@ -397,6 +420,22 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   );
 
   canvas.style.cursor = 'grab';
+
+  const resizeCanvas = (): void => {
+    const nextWidth = container.clientWidth || 220;
+    if (Math.abs(nextWidth - width) < 1) return;
+    width = nextWidth;
+    cx = width / 2;
+    cy = height / 2;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    for (const node of nodes) {
+      node.x = Math.max(12, Math.min(width - 12, node.x));
+      node.y = Math.max(12, Math.min(height - 12, node.y));
+    }
+    draw();
+  };
+  new ResizeObserver(resizeCanvas).observe(container);
 
   // Local/global toggle (rendered next to the canvas on note pages).
   const panel = container.closest('.graph-panel');

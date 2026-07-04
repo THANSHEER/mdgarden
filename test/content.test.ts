@@ -2,7 +2,8 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadIgnorePatterns } from '../src/parser/content.js';
+import { collectContent, loadIgnorePatterns } from '../src/parser/content.js';
+import { resolveConfig } from '../src/core/config.js';
 
 let tmpDir: string;
 
@@ -57,5 +58,20 @@ describe('loadIgnorePatterns', () => {
     );
     const patterns = await loadIgnorePatterns(tmpDir);
     expect(patterns).toEqual(['.DS_Store', '*.log']);
+  });
+});
+
+describe('collectContent (git-date lookup is shell-injection safe)', () => {
+  it('treats a shell-metacharacter filename as a literal path, never as shell syntax', async () => {
+    // A filename like this would execute `touch pwned` if the git-date lookup
+    // ever shelled out via string interpolation instead of execFile's argv array.
+    const evilName = '$(touch pwned).md';
+    await fs.writeFile(path.join(tmpDir, evilName), '# Title\n\nBody text.\n');
+
+    const { pages } = await collectContent(tmpDir, resolveConfig({}), []);
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0].title).toBe('Title');
+    await expect(fs.access(path.join(tmpDir, 'pwned'))).rejects.toThrow();
   });
 });

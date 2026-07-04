@@ -2,16 +2,16 @@
 
 import { withBase } from './parser/links.js';
 import { escapeAttr } from './utils.js';
-import type { MdsitePlugin, RenderInfo } from './core/plugin.js';
-import type { MdsiteConfig } from './types.js';
+import type { MdgardenPlugin, RenderInfo } from './core/plugin.js';
+import type { MdgardenConfig } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
 
 /** The built-in plugins enabled for a given config. */
-export function builtinPlugins(config: MdsiteConfig): MdsitePlugin[] {
-  const plugins: MdsitePlugin[] = [ogPlugin()];
+export function builtinPlugins(config: MdgardenConfig): MdgardenPlugin[] {
+  const plugins: MdgardenPlugin[] = [ogPlugin()];
   if (config.features.comments && config.comments) plugins.push(commentsPlugin());
   return plugins;
 }
@@ -21,14 +21,14 @@ export function builtinPlugins(config: MdsiteConfig): MdsitePlugin[] {
 // ---------------------------------------------------------------------------
 
 /** Make a URL absolute against `site.baseUrl` (left relative if no baseUrl). */
-function absoluteUrl(config: MdsiteConfig, url: string): string {
+function absoluteUrl(config: MdgardenConfig, url: string): string {
   if (/^https?:\/\//i.test(url)) return url;
   const base = config.site.baseUrl.replace(/\/$/, '');
   return base ? `${base}${url}` : url;
 }
 
 /** Resolve the social image for a document (frontmatter → site default). */
-function ogImage(info: RenderInfo, config: MdsiteConfig): string | undefined {
+function ogImage(info: RenderInfo, config: MdgardenConfig): string | undefined {
   const fm = info.frontmatter ?? {};
   const raw =
     (typeof fm.image === 'string' && fm.image) ||
@@ -40,10 +40,10 @@ function ogImage(info: RenderInfo, config: MdsiteConfig): string | undefined {
   return absoluteUrl(config, rooted);
 }
 
-function ogPlugin(): MdsitePlugin {
+function ogPlugin(): MdgardenPlugin {
   return {
     name: 'og',
-    head(info: RenderInfo, config: MdsiteConfig) {
+    head(info: RenderInfo, config: MdgardenConfig) {
       const title = info.title;
       const desc = info.description;
       const url = absoluteUrl(config, info.url);
@@ -72,10 +72,10 @@ function ogPlugin(): MdsitePlugin {
 // Giscus comments plugin
 // ---------------------------------------------------------------------------
 
-function commentsPlugin(): MdsitePlugin {
+function commentsPlugin(): MdgardenPlugin {
   return {
     name: 'comments',
-    bodyEnd(info: RenderInfo, config: MdsiteConfig) {
+    bodyEnd(info: RenderInfo, config: MdgardenConfig) {
       const c = config.comments;
       if (!c || c.provider !== 'giscus') return '';
       if (info.kind !== 'note') return ''; // comments only on real notes

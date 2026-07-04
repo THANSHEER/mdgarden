@@ -42,18 +42,20 @@ export function initExplorer(): void {
   root.querySelectorAll<HTMLElement>('.explorer-folder').forEach((li) => {
     const key = folderKey(li);
     if (key in state) li.classList.toggle('is-open', state[key]);
+    const toggle = li.querySelector<HTMLButtonElement>(':scope > .folder-toggle');
+    toggle?.setAttribute('aria-expanded', String(li.classList.contains('is-open')));
   });
+
+  if (root instanceof HTMLElement && root.dataset.explorerInitialized === 'true') return;
+  if (root instanceof HTMLElement) root.dataset.explorerInitialized = 'true';
 
   root.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     let toggle = target.closest('.folder-toggle');
-    
 
+    // Clicking the label (not just the chevron) also toggles its folder.
     if (!toggle && target.closest('span.folder-label')) {
-      const folderLi = target.closest('.explorer-folder');
-      if (folderLi) {
-        toggle = folderLi.querySelector('.folder-toggle');
-      }
+      toggle = target.closest('.explorer-folder')?.querySelector('.folder-toggle') ?? null;
     }
 
     if (!toggle) return;

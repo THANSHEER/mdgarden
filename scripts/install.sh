@@ -1,14 +1,14 @@
 #!/bin/sh
 # mdgarden installer — downloads the standalone binary (no Node required).
 #
-#   curl -fsSL https://raw.githubusercontent.com/THANSHEER/mdsite/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/THANSHEER/mdgarden/main/scripts/install.sh | sh
 #
 # Env overrides:
 #   MDGARDEN_VERSION   tag to install (default: latest)
 #   MDGARDEN_BIN_DIR   install dir (default: /usr/local/bin, fallback ~/.local/bin)
 set -eu
 
-REPO="THANSHEER/mdsite"
+REPO="THANSHEER/mdgarden"
 VERSION="${MDGARDEN_VERSION:-latest}"
 
 # --- detect platform -------------------------------------------------------

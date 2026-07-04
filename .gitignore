@@ -10,3 +10,20 @@ coverage/
 sea-config.json
 *.tgz
 mdgarden-*.tgz
+# Build cache (regenerated every build, including the manual test_vault)
+.mdgarden-cache.json
+# Manual test-vault build output (see scripts: vault:build / vault:dev).
+# Deliberately kept OUTSIDE test_vault/ itself — an outDir nested inside the
+# watched contentDir causes the dev-server watcher to react to its own writes.
+/.vault-site/
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+# Local env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+# TS incremental build info, in case it gets enabled later
+*.tsbuildinfo

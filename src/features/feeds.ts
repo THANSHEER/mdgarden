@@ -1,6 +1,6 @@
 import { escapeHtml } from '../utils.js';
 import { withBase } from '../parser/links.js';
-import type { MdsiteConfig, Page } from '../types.js';
+import type { MdgardenConfig, Page } from '../types.js';
 
 function abs(baseUrl: string, url: string): string {
   return `${baseUrl.replace(/\/$/, '')}${url}`;
@@ -18,7 +18,7 @@ export function buildSitemap(pages: Page[], baseUrl: string): string {
 }
 
 /** Build RSS feed. */
-export function buildRss(pages: Page[], config: MdsiteConfig): string {
+export function buildRss(pages: Page[], config: MdgardenConfig): string {
   const base = config.site.baseUrl;
   const items = pages
     .filter((p) => p.date)
@@ -34,7 +34,7 @@ export function buildRss(pages: Page[], config: MdsiteConfig): string {
 }
 
 /** Build robots.txt. */
-export function buildRobots(config: MdsiteConfig): string {
+export function buildRobots(config: MdgardenConfig): string {
   const lines = ['User-agent: *', 'Allow: /'];
   const base = config.site.baseUrl.replace(/\/$/, '');
   if (base) lines.push(`Sitemap: ${base}${withBase('/sitemap.xml')}`);

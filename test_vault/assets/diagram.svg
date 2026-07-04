@@ -1,0 +1,7 @@
+<svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="40" width="80" height="40" rx="6" fill="#7fae6f"/>
+  <text x="50" y="65" font-size="12" text-anchor="middle" fill="#1a1a1a">Notes</text>
+  <line x1="90" y1="60" x2="150" y2="60" stroke="#5f6b5f" stroke-width="2"/>
+  <rect x="150" y="40" width="80" height="40" rx="6" fill="#2f6f4f"/>
+  <text x="190" y="65" font-size="12" text-anchor="middle" fill="#ffffff">Site</text>
+</svg>

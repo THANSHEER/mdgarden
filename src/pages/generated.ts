@@ -2,8 +2,7 @@
 
 import { renderDocument, type RenderContext } from '../parser/render.js';
 import { tagUrl, withBase } from '../parser/links.js';
-import { t } from '../utils.js';
-import { escapeAttr, escapeHtml } from '../utils.js';
+import { escapeAttr, escapeHtml, t } from '../utils.js';
 import type { Page } from '../types.js';
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import matter from 'gray-matter';
 import picomatch from 'picomatch';
 import { imageSize } from 'image-size';
@@ -12,7 +12,7 @@ import {
   urlForSlug,
   withBase,
 } from './links.js';
-import type { Asset, MdsiteConfig, Page } from '../types.js';
+import type { Asset, MdgardenConfig, Page } from '../types.js';
 
 // Files copied verbatim into the output site (not processed as Markdown).
 const ASSET_EXTS = new Set([
@@ -60,7 +60,7 @@ export async function loadIgnorePatterns(projectRoot: string): Promise<string[]>
 /** Collect pages and assets from contentDir using the provided ignore patterns. */
 export async function collectContent(
   contentDir: string,
-  config: MdsiteConfig,
+  config: MdgardenConfig,
   ignorePatterns: string[],
 ): Promise<CollectResult> {
   const matcher = ignorePatterns.length
@@ -118,8 +118,9 @@ async function walk(root: string, dir: string, isIgnored: (rel: string) => boole
   return out;
 }
 
-async function readPage(contentDir: string, rel: string, config: MdsiteConfig): Promise<Page | null> {
-  const raw = await fs.readFile(path.join(contentDir, rel), 'utf8');
+async function readPage(contentDir: string, rel: string, config: MdgardenConfig): Promise<Page | null> {
+  const absPath = path.join(contentDir, rel);
+  const raw = await fs.readFile(absPath, 'utf8');
 
   let data: Record<string, unknown> = {};
   let body = raw;
@@ -141,9 +142,9 @@ async function readPage(contentDir: string, rel: string, config: MdsiteConfig): 
   const title = pickTitle(data.title, body, rel);
   const words = countWords(body);
   const aliases = normalizeAliases(data.aliases);
-  
+
   if (isLanding && slug === '') {
-    // Add original path as alias.
+    // The landing page keeps answering at its original path too.
     const originalSlug = slugifyPath(rel);
     if (originalSlug && !aliases.includes(originalSlug)) {
       aliases.push(originalSlug);
@@ -152,33 +153,13 @@ async function readPage(contentDir: string, rel: string, config: MdsiteConfig): 
 
   let pageDate = normalizeDate(data.date);
   let mtimeMs = 0;
-  
+  try {
+    mtimeMs = (await fs.stat(absPath)).mtimeMs;
+  } catch {
+    // File vanished between listing and reading — leave mtimeMs at 0.
+  }
   if (!pageDate) {
-    try {
-      const absPath = path.join(contentDir, rel);
-      const stdout = execSync(`git log -1 --format="%at" -- "${absPath}"`, { stdio: 'pipe', encoding: 'utf8' }).trim();
-      const stat = await fs.stat(absPath);
-      mtimeMs = stat.mtimeMs;
-      
-      if (stdout) {
-        pageDate = new Date(parseInt(stdout, 10) * 1000).toISOString().split('T')[0];
-      } else {
-        pageDate = new Date(stat.mtimeMs).toISOString().split('T')[0];
-      }
-    } catch {
-      try {
-        const absPath = path.join(contentDir, rel);
-        const stat = await fs.stat(absPath);
-        mtimeMs = stat.mtimeMs;
-        pageDate = new Date(stat.mtimeMs).toISOString().split('T')[0];
-      } catch {}
-    }
-  } else {
-    try {
-        const absPath = path.join(contentDir, rel);
-        const stat = await fs.stat(absPath);
-        mtimeMs = stat.mtimeMs;
-    } catch {}
+    pageDate = gitCommitDate(absPath) ?? (mtimeMs ? new Date(mtimeMs).toISOString().split('T')[0] : undefined);
   }
 
   return {
@@ -203,6 +184,24 @@ async function readPage(contentDir: string, rel: string, config: MdsiteConfig): 
     headings: [],
     mtimeMs,
   };
+}
+
+/**
+ * Last git-committed date for a file ("YYYY-MM-DD"), or undefined when git/the
+ * repo/the file's history is unavailable. Uses execFileSync (argv array, no
+ * shell) so a file path can never be interpreted as shell syntax.
+ */
+function gitCommitDate(absPath: string): string | undefined {
+  try {
+    const stdout = execFileSync(
+      'git',
+      ['log', '-1', '--format=%at', '--', absPath],
+      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' },
+    ).trim();
+    return stdout ? new Date(Number(stdout) * 1000).toISOString().split('T')[0] : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Count words in content. */
