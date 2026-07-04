@@ -31,7 +31,7 @@ describe('mdgarden --help / --version', () => {
   it('lists all commands', async () => {
     const { stdout, code } = await runCli(['--help'], process.cwd());
     expect(code).toBe(0);
-    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'config', 'publish']) {
+    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'config', 'update', 'publish']) {
       expect(stdout).toContain(cmd);
     }
   });

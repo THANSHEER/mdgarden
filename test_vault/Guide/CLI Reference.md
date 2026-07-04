@@ -71,6 +71,16 @@ mdgarden config unset <key>        # remove a key, falling back to default
 |---|---|
 | `-c, --config <file>` | Path to `mdgarden.config.json` |
 
+### `mdgarden update`
+
+Update `mdgarden` to the latest available version. The command chooses the
+right path for the current install:
+
+- Standalone binary: re-runs the bundled installer against the current install
+  directory.
+- Homebrew: runs `brew upgrade mdgarden`.
+- npm: runs `npm install -g mdgarden@latest`.
+
 ### `mdgarden publish [contentDir]`
 
 Build, then deploy straight to GitHub Pages or Cloudflare Pages.
