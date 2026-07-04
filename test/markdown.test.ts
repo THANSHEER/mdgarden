@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createMarkdown } from '../src/parser/markdown.js';
 import { buildSiteIndex, makeRenderEnv, setBasePath } from '../src/parser/links.js';
 import { DEFAULT_CONFIG } from '../src/core/config.js';
-import type { Page } from '../src/types.js';
+import type { Asset, Page } from '../src/types.js';
 
 afterEach(() => setBasePath(undefined));
 
@@ -120,6 +120,52 @@ describe('createMarkdown: wikilinks', () => {
     const md = createMarkdown(DEFAULT_CONFIG);
     const html = md.render('[[Target|See here]]\n', makeRenderEnv(buildSiteIndex(pages(), [])));
     expect(html).toContain('>See here<');
+  });
+});
+
+describe('createMarkdown: video/audio embedding', () => {
+  function mediaAssets(): Asset[] {
+    return [
+      { sourcePath: 'clip.mp4', outPath: 'clip.mp4', url: '/clip.mp4' },
+      { sourcePath: 'song.mp3', outPath: 'song.mp3', url: '/song.mp3' },
+      { sourcePath: 'pic.png', outPath: 'pic.png', url: '/pic.png', width: 400, height: 300 },
+    ];
+  }
+
+  it('renders a [[wikilink]] video embed as a <video> tag', () => {
+    const md = createMarkdown(DEFAULT_CONFIG);
+    const env = makeRenderEnv(buildSiteIndex([], mediaAssets()));
+    const html = md.render('![[clip.mp4]]\n', env);
+    expect(html).toContain('<video src="/clip.mp4" controls preload="metadata"');
+  });
+
+  it('renders a [[wikilink]] audio embed as an <audio> tag', () => {
+    const md = createMarkdown(DEFAULT_CONFIG);
+    const env = makeRenderEnv(buildSiteIndex([], mediaAssets()));
+    const html = md.render('![[song.mp3]]\n', env);
+    expect(html).toContain('<audio src="/song.mp3" controls preload="metadata"');
+  });
+
+  it('renders a plain markdown image pointing at a video file as a <video> tag', () => {
+    const md = createMarkdown(DEFAULT_CONFIG);
+    const html = md.render('![A clip](/clip.mp4)\n', emptyEnv());
+    expect(html).toContain('<video src="/clip.mp4" controls preload="metadata"');
+    expect(html).not.toContain('<img');
+  });
+
+  it('renders a plain markdown image pointing at an audio file as an <audio> tag', () => {
+    const md = createMarkdown(DEFAULT_CONFIG);
+    const html = md.render('![A song](/song.mp3)\n', emptyEnv());
+    expect(html).toContain('<audio src="/song.mp3" controls preload="metadata"');
+    expect(html).not.toContain('<img');
+  });
+
+  it('adds width/height to a plain markdown image when dimensions are known', () => {
+    const md = createMarkdown(DEFAULT_CONFIG);
+    const env = makeRenderEnv(buildSiteIndex([], mediaAssets()));
+    const html = md.render('![alt](/pic.png)\n', env);
+    expect(html).toContain('width="400"');
+    expect(html).toContain('height="300"');
   });
 });
 

@@ -1,15 +1,17 @@
 name: Release
 
 # Fires when you push a version tag, e.g. `git tag v0.1.0 && git push --tags`.
-# Publishes: npm package, standalone binaries (GitHub Release assets), a Docker
-# image (ghcr.io), and an updated Homebrew formula in the tap repo.
+# Publishes: npm package, standalone binaries (GitHub Release assets), and an
+# updated Homebrew formula in the tap repo.
 on:
   push:
-    tags: ['v*']
+    branches:
+      - main
+    paths:
+      - 'package.json'
 
 permissions:
   contents: write # create the release + upload assets
-  packages: write # push the Docker image to ghcr.io
 
 jobs:
   # 1) npm — the canonical channel (CLI + npx + library). Publishes via npm
@@ -60,34 +62,7 @@ jobs:
         with:
           files: mdgarden-${{ matrix.target }}.${{ matrix.ext }}
 
-  # 3) Docker image (multi-arch) to ghcr.io. Uses the built-in GITHUB_TOKEN.
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/mdgarden
-          tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  # 4) Homebrew — refresh the tap formula's version + sha256 from the release assets.
+  # 3) Homebrew — refresh the tap formula's version + sha256 from the release assets.
   #    Needs a TAP_REPO_TOKEN secret (PAT with write access to THANSHEER/homebrew-tap).
   homebrew:
     needs: [binaries]

@@ -1,7 +1,7 @@
 {
   "name": "mdgarden",
   "version": "0.2.0",
-  "description": "Turn a folder of Markdown notes into a fast static website. A lightweight, framework-free",
+  "description": "Turn a folder of Markdown notes into a fast, framework-free static website.",
   "type": "module",
   "bin": {
     "mdgarden": "dist/cli.js"
@@ -27,6 +27,10 @@
     "build:binary": "node scripts/build-sea.mjs",
     "embed:assets": "node scripts/embed-assets.mjs",
     "pack:check": "npm pack --dry-run",
+    "vault:build": "npm run build --silent && node dist/cli.js build test_vault -o .vault-site -c test_vault/mdgarden.config.json -y",
+    "vault:dev": "node scripts/dev-site.mjs test_vault -o .vault-site -c test_vault/mdgarden.config.json",
+    "site:build": "npm run build --silent && node dist/cli.js build",
+    "site:dev": "node scripts/dev-site.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -45,11 +49,11 @@
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/THANSHEER/mdsite.git"
+    "url": "git+https://github.com/THANSHEER/mdgarden.git"
   },
-  "homepage": "https://github.com/THANSHEER/mdsite#readme",
+  "homepage": "https://github.com/THANSHEER/mdgarden#readme",
   "bugs": {
-    "url": "https://github.com/THANSHEER/mdsite/issues"
+    "url": "https://github.com/THANSHEER/mdgarden/issues"
   },
   "engines": {
     "node": ">=20.12.0"

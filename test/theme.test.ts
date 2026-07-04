@@ -1,24 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { buildStyles } from '../src/parser/theme.js';
 import { DEFAULT_CONFIG } from '../src/core/config.js';
-import type { MdsiteConfig } from '../src/types.js';
+import type { MdgardenConfig } from '../src/types.js';
 
-function withDarkMode(mode: MdsiteConfig['theme']['darkMode']): MdsiteConfig {
+function withDarkMode(mode: MdgardenConfig['theme']['darkMode']): MdgardenConfig {
   return { ...DEFAULT_CONFIG, theme: { ...DEFAULT_CONFIG.theme, darkMode: mode } };
 }
 
 describe('buildStyles', () => {
-  it('"toggle": emits both light and dark vars plus a prefers-color-scheme block', () => {
-    const css = buildStyles(withDarkMode('toggle'));
-    expect(css).toContain(':root{--color-bg:#faf8f8');
-    expect(css).toContain(':root[data-theme="dark"]{--color-bg:#161618');
-    expect(css).toContain('@media (prefers-color-scheme:dark)');
-  });
-
-  it('"auto": emits a prefers-color-scheme block but no manual toggle selector', () => {
+  it('"auto": emits light vars by default plus a prefers-color-scheme dark block, with no on-site control', () => {
     const css = buildStyles(withDarkMode('auto'));
-    expect(css).toContain('@media (prefers-color-scheme:dark)');
-    expect(css).toContain(':root[data-theme="dark"]{--color-bg:#161618');
+    expect(css).toContain(':root{--color-bg:#faf8f8');
+    expect(css).toContain('@media (prefers-color-scheme:dark){:root{--color-bg:#161618');
+    expect(css).not.toContain('data-theme');
   });
 
   it('"light": only emits light vars, no dark block at all', () => {

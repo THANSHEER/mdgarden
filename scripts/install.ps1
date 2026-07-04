@@ -1,13 +1,13 @@
 # mdgarden installer for Windows (PowerShell) — standalone binary, no Node needed.
 #
-#   irm https://raw.githubusercontent.com/THANSHEER/mdsite/main/scripts/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/THANSHEER/mdgarden/main/scripts/install.ps1 | iex
 #
 # Env overrides:
 #   $env:MDGARDEN_VERSION   tag to install (default: latest)
 #   $env:MDGARDEN_BIN_DIR   install dir (default: %LOCALAPPDATA%\Programs\mdgarden)
 $ErrorActionPreference = 'Stop'
 
-$repo = 'THANSHEER/mdsite'
+$repo = 'THANSHEER/mdgarden'
 $version = if ($env:MDGARDEN_VERSION) { $env:MDGARDEN_VERSION } else { 'latest' }
 
 $arch = 'x64'

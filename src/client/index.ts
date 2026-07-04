@@ -1,5 +1,4 @@
 // Client-side entrypoint.
-import { initDarkMode } from './darkmode.js';
 import { initSearch } from './search.js';
 import { initGraph } from './graph.js';
 import { initExplorer } from './explorer.js';
@@ -26,7 +25,6 @@ function loadMermaid(): void {
 }
 
 function start(): void {
-  initDarkMode();
   initSearch();
   initGraph();
   initExplorer();

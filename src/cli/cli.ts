@@ -1,3 +1,4 @@
+import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { cac } from 'cac';
 import { build } from '../core/build.js';
@@ -5,6 +6,7 @@ import { serve } from './serve.js';
 import { initSite, canPrompt, configExists, redesignSite, runConfigWizard } from './wizard.js';
 import { publish } from './publish.js';
 import { VERSION } from '../index.js';
+import { getConfigValue, loadConfig, parseConfigValue, setConfigValue, unsetConfigValue } from '../core/config.js';
 
 const cli = cac('mdgarden');
 
@@ -133,6 +135,72 @@ cli
       process.exitCode = 1;
     }
   });
+
+cli
+  .command(
+    'config <action> [key] [value]',
+    'Read or edit mdgarden.config.json: "config get [key]", "config set <key> <value>", "config unset <key>"',
+  )
+  .option('-c, --config <file>', 'Path to mdgarden.config.json')
+  .action(
+    async (
+      action: string,
+      key: string | undefined,
+      value: string | undefined,
+      options: { config?: string },
+    ) => {
+      const cwd = process.cwd();
+      try {
+        if (action === 'get') {
+          const { config } = await loadConfig(options.config, cwd);
+          if (!key) {
+            console.log(JSON.stringify(config, null, 2));
+            return;
+          }
+          const found = getConfigValue(config, key);
+          if (found === undefined) {
+            console.error(`✗ No such config key: "${key}"`);
+            process.exitCode = 1;
+            return;
+          }
+          console.log(typeof found === 'string' ? found : JSON.stringify(found, null, 2));
+          return;
+        }
+
+        if (action === 'set') {
+          if (!key || value === undefined) {
+            throw new Error('Usage: mdgarden config set <key> <value>');
+          }
+          const { config, configPath } = await loadConfig(options.config, cwd);
+          if (!configPath) {
+            throw new Error('No mdgarden.config.json found — run "mdgarden init" first.');
+          }
+          const updated = setConfigValue(config, key, parseConfigValue(value));
+          await fs.writeFile(configPath, `${JSON.stringify(updated, null, 2)}\n`);
+          const written = getConfigValue(updated, key);
+          console.log(`✓ Set ${key} = ${typeof written === 'string' ? written : JSON.stringify(written)}`);
+          return;
+        }
+
+        if (action === 'unset') {
+          if (!key) throw new Error('Usage: mdgarden config unset <key>');
+          const { config, configPath } = await loadConfig(options.config, cwd);
+          if (!configPath) {
+            throw new Error('No mdgarden.config.json found — run "mdgarden init" first.');
+          }
+          const updated = unsetConfigValue(config, key);
+          await fs.writeFile(configPath, `${JSON.stringify(updated, null, 2)}\n`);
+          console.log(`✓ Unset ${key}`);
+          return;
+        }
+
+        throw new Error(`Unknown config action "${action}" — use "get", "set", or "unset".`);
+      } catch (err) {
+        console.error(`✗ Config ${action} failed: ${(err as Error).message}`);
+        process.exitCode = 1;
+      }
+    },
+  );
 
 cli
   .command('publish [contentDir]', 'Build and deploy to GitHub Pages or Cloudflare Pages')

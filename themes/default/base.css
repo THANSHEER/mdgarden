@@ -9,10 +9,16 @@
 
 html {
   scroll-behavior: smooth;
+  height: 100%;
 }
 
 body {
   margin: 0;
+  height: 100dvh;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
@@ -28,6 +34,40 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-weight: 700;
+  transform: translateY(calc(-100% - 1rem));
+  transition: transform 0.15s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---- Layout ------------------------------------------------------------- */
@@ -61,27 +101,43 @@ a:hover {
 }
 
 .layout {
+  --pane-inline-space: clamp(1rem, 1.4vw, 1.5rem);
+  --article-inline-space: clamp(1.5rem, 3vw, 3.25rem);
+  flex: 1 1 auto;
+  min-height: 0;
+  width: min(100%, 105rem);
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 240px;
-  gap: 2rem;
-  max-width: 1220px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
-  align-items: start;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(15rem, 20rem);
+  gap: 0;
+  margin-inline: auto;
+  padding: clamp(1rem, 2.5vh, 2rem) clamp(1rem, 3vw, 3rem) 0;
+}
+/* A hairline between each pane makes the 3-pane split legible at a glance. */
+.sidebar-right {
+  border-left: 1px solid var(--color-border);
+  padding: 0.25rem var(--pane-inline-space) 3rem;
+  direction: rtl;
+  scrollbar-gutter: stable;
+}
+.sidebar-right > * {
+  direction: ltr;
 }
 .layout.no-right {
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 78ch);
+  justify-content: center;
 }
 .graph-panel {
   margin-top: 1.5rem;
 }
 
+/* Each pane scrolls independently, like Obsidian Publish. */
 .sidebar {
-  position: sticky;
-  top: 1.5rem;
-  font-size: 0.9rem;
-  max-height: calc(100vh - 3rem);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  font-size: 0.9rem;
   padding: 0.25rem;
 }
 .sidebar h2 {
@@ -92,6 +148,28 @@ a:hover {
   margin: 0 0 0.75rem;
   padding: 0.25rem 0.5rem;
   font-weight: 600;
+}
+
+/* The left sidebar's header (logo, title, search) stays put; only the notes
+   list below it scrolls — matching Obsidian Publish's split behavior. */
+.sidebar-left {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-right: 1px solid var(--color-border);
+}
+.sidebar-fixed {
+  flex-shrink: 0;
+  padding: 0.25rem var(--pane-inline-space) 0 0.5rem;
+}
+.sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  padding: 0 var(--pane-inline-space) 0.5rem 0.5rem;
 }
 
 /* ---- Sidebar header (site title, nav, search trigger) ------------------ */
@@ -111,10 +189,10 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  margin: 0 0 0.6rem;
-  border-radius: 14px;
+  width: 128px;
+  height: 128px;
+  margin: 0 0 0.85rem;
+  border-radius: 22px;
   overflow: hidden;
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   text-decoration: none;
@@ -127,8 +205,13 @@ a:hover {
   display: block;
 }
 .sidebar-logo-emoji {
-  font-size: 1.8rem;
+  font-size: 4rem;
   line-height: 1;
+}
+.sidebar-logo-mark svg {
+  width: 64%;
+  height: 64%;
+  color: var(--color-primary);
 }
 .site-title {
   font-family: var(--font-heading);
@@ -180,6 +263,9 @@ a:hover {
 }
 .sidebar-backdrop {
   display: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .sidebar-profile {
@@ -217,10 +303,16 @@ a:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.page-list a:hover,
-.page-list a.is-active {
+.page-list a:hover {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  text-decoration: none;
+}
+.page-list a.is-active {
+  color: var(--color-primary);
+  background: transparent;
+  box-shadow: inset 2px 0 0 var(--color-primary);
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -248,9 +340,10 @@ a:hover {
 .explorer-file a,
 .folder-label {
   color: var(--color-muted);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  /* Block, not flex: text-overflow only ellipsizes a box's own text content
+     reliably when that box isn't itself a flex container (the text becomes
+     an unshrinkable anonymous flex item otherwise and just overflows). */
+  display: block;
   padding: 0.3rem 0.5rem;
   border-radius: 6px;
   white-space: nowrap;
@@ -270,10 +363,22 @@ a.folder-label:hover {
   text-decoration: none;
 }
 .explorer-file a.is-active {
-  color: var(--color-text);
-  font-weight: 500;
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  box-shadow: inset 2px 0 0 var(--color-primary);
+  position: relative;
+  color: var(--color-primary);
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+}
+.explorer-file a.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  width: 2px;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  transform: translateY(-50%);
 }
 .folder-label {
   font-weight: 600;
@@ -291,8 +396,8 @@ a.folder-label:hover {
 }
 .folder-toggle {
   flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -304,17 +409,16 @@ a.folder-label:hover {
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease, background 0.2s ease;
-  font-size: 0.65rem;
 }
 .folder-toggle:hover {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
-.folder-toggle::before {
-  content: '▸';
+.folder-toggle svg {
+  transition: transform 0.15s ease;
 }
-.explorer-folder.is-open > .folder-toggle::before {
-  content: '▾';
+.explorer-folder.is-open > .folder-toggle svg {
+  transform: rotate(90deg);
 }
 
 /* ---- Breadcrumbs -------------------------------------------------------- */
@@ -384,6 +488,22 @@ a.folder-label:hover {
 
 .content {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  padding: 0 var(--article-inline-space) 1.5rem;
+}
+.md-content {
+  width: 100%;
+  max-width: 78ch;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+}
+.md-content :where(p, li, blockquote) a:not(.tag) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 .page-title {
   font-family: var(--font-heading);
@@ -426,10 +546,19 @@ a.folder-label:hover {
   padding-bottom: 0.2rem;
   border-bottom: 1px solid var(--color-border);
 }
-.content img {
+.content img,
+.content video,
+.content audio {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
+}
+.content video,
+.content audio {
+  display: block;
+}
+.content audio {
+  width: 100%;
 }
 .content blockquote {
   margin: 1rem 0;
@@ -438,6 +567,9 @@ a.folder-label:hover {
   color: var(--color-muted);
 }
 .content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   width: 100%;
   margin: 1rem 0;
@@ -475,10 +607,69 @@ a.folder-label:hover {
   overflow-x: auto;
   font-size: 0.9rem;
   line-height: 1.5;
+  scrollbar-gutter: stable;
 }
 .content pre code {
   background: none;
   padding: 0;
+}
+
+/* Keep independent-pane scrollbars visually attached to their dividers. */
+.content,
+.sidebar-scroll,
+.sidebar-right,
+.search-results,
+.graph-links ul,
+.content pre,
+.content table,
+.katex-display {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 48%, transparent) transparent;
+}
+.content::-webkit-scrollbar,
+.sidebar-scroll::-webkit-scrollbar,
+.sidebar-right::-webkit-scrollbar,
+.search-results::-webkit-scrollbar,
+.graph-links ul::-webkit-scrollbar,
+.content pre::-webkit-scrollbar,
+.content table::-webkit-scrollbar,
+.katex-display::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.content::-webkit-scrollbar-track,
+.sidebar-scroll::-webkit-scrollbar-track,
+.sidebar-right::-webkit-scrollbar-track,
+.search-results::-webkit-scrollbar-track,
+.graph-links ul::-webkit-scrollbar-track,
+.content pre::-webkit-scrollbar-track,
+.content table::-webkit-scrollbar-track,
+.katex-display::-webkit-scrollbar-track {
+  background: transparent;
+}
+.content::-webkit-scrollbar-thumb,
+.sidebar-scroll::-webkit-scrollbar-thumb,
+.sidebar-right::-webkit-scrollbar-thumb,
+.search-results::-webkit-scrollbar-thumb,
+.graph-links ul::-webkit-scrollbar-thumb,
+.content pre::-webkit-scrollbar-thumb,
+.content table::-webkit-scrollbar-thumb,
+.katex-display::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-muted) 55%, transparent);
+  background-clip: padding-box;
+}
+.content::-webkit-scrollbar-thumb:hover,
+.sidebar-scroll::-webkit-scrollbar-thumb:hover,
+.sidebar-right::-webkit-scrollbar-thumb:hover,
+.search-results::-webkit-scrollbar-thumb:hover,
+.graph-links ul::-webkit-scrollbar-thumb:hover,
+.content pre::-webkit-scrollbar-thumb:hover,
+.content table::-webkit-scrollbar-thumb:hover,
+.katex-display::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-primary) 72%, transparent);
+  background-clip: padding-box;
 }
 
 /* task lists */
@@ -573,20 +764,6 @@ a.folder-label:hover {
   white-space: normal;
 }
 
-/* ---- Footer ------------------------------------------------------------- */
-
-.site-footer {
-  border-top: 1px solid var(--color-border);
-  padding: 2rem 1.5rem;
-  text-align: center;
-  color: var(--color-muted);
-  font-size: 0.85rem;
-}
-.site-footer a {
-  color: var(--color-muted);
-  margin: 0 0.4rem;
-}
-
 /* ---- Tag index ---------------------------------------------------------- */
 
 .tag-cloud {
@@ -601,14 +778,26 @@ a.folder-label:hover {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: none;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border: 0;
   align-items: flex-start;
   justify-content: center;
-  padding-top: 12vh;
+  padding: 12vh 1rem 1rem;
   background: color-mix(in srgb, #000 45%, transparent);
+  color: var(--color-text);
 }
-.search-modal.is-open {
+.search-modal:not([open]) {
+  display: none;
+}
+.search-modal[open] {
   display: flex;
+}
+.search-modal::backdrop {
+  background: transparent;
 }
 .search-box {
   width: min(640px, 92vw);
@@ -618,16 +807,30 @@ a.folder-label:hover {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
+.search-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
 .search-box input {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   border: none;
-  border-bottom: 1px solid var(--color-border);
   background: none;
   color: var(--color-text);
   font-size: 1.1rem;
   padding: 1rem 1.25rem;
   outline: none;
   font-family: var(--font-body);
+}
+.search-box input:focus-visible {
+  outline-offset: -3px;
+}
+.search-close {
+  flex: 0 0 auto;
+  margin-right: 0.65rem;
 }
 .search-results {
   list-style: none;
@@ -695,6 +898,23 @@ a.folder-label:hover {
   border-radius: 10px;
   touch-action: none;
 }
+.graph-links {
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+}
+.graph-links summary {
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.graph-links ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+.graph-links li + li {
+  margin-top: 0.25rem;
+}
 .graph-tooltip {
   position: absolute;
   z-index: 5;
@@ -711,9 +931,13 @@ a.folder-label:hover {
 
 /* ---- Responsive --------------------------------------------------------- */
 
-@media (max-width: 1024px) {
+@media (max-width: 80rem) {
   .layout {
-    grid-template-columns: minmax(0, 1fr) 240px;
+    width: min(100%, 78rem);
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
+  }
+  .layout.no-right {
+    grid-template-columns: minmax(0, 78ch);
   }
   .sidebar-left {
     display: none;
@@ -721,7 +945,7 @@ a.folder-label:hover {
   .mobile-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     position: sticky;
@@ -732,7 +956,7 @@ a.folder-label:hover {
     border-bottom: 1px solid var(--color-border);
   }
   body.sidebar-open .sidebar-left {
-    display: block;
+    display: flex;
     position: fixed;
     top: 0;
     left: 0;
@@ -742,8 +966,7 @@ a.folder-label:hover {
     background: var(--color-bg);
     border-right: 1px solid var(--color-border);
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
-    padding: 1rem;
-    overflow-y: auto;
+    padding: 1rem 0 1rem 0.75rem;
     max-height: 100vh;
   }
   body.sidebar-open .sidebar-backdrop {
@@ -754,20 +977,77 @@ a.folder-label:hover {
     background: rgba(0, 0, 0, 0.4);
   }
 }
-@media (max-width: 760px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 1.25rem 1rem 3rem;
+@media (max-width: 56rem) {
+  /* Single stacked column: nothing left to split into independent panes,
+     so fall back to one continuous page scroll (content, then TOC/graph/backlinks). */
+  body {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .layout,
+  .layout.no-right {
+    display: block;
+    width: 100%;
+    padding: 1.25rem 1rem;
+    overflow: visible;
+  }
+  .content {
+    height: auto;
+    overflow: visible;
+    padding: 0 0 1.5rem;
   }
   /* Single column: let the right rail (TOC, graph, backlinks) flow below the article. */
   .sidebar-right {
+    direction: ltr;
     position: static;
+    height: auto;
     max-height: none;
     overflow: visible;
     margin-top: 2rem;
+    border-left: none;
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--color-border);
   }
   .sidebar-nav {
     display: none;
+  }
+  .powered-by-mdgarden {
+    position: static;
+    display: block;
+    padding: 1rem;
+    text-align: center;
+  }
+}
+@media (max-width: 36rem) {
+  .page-title {
+    font-size: clamp(1.75rem, 9vw, 2.1rem);
+  }
+  .page-meta {
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .folder-toggle,
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .search-modal {
+    padding-top: 5vh;
+  }
+  .content pre {
+    padding: 0.85rem;
+    font-size: 0.82rem;
+  }
+}
+@media (max-height: 43.75rem) and (min-width: 80.01rem) {
+  .layout {
+    padding-top: 0.75rem;
+  }
+  .sidebar-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
   }
 }
 
@@ -780,19 +1060,12 @@ a.folder-label:hover {
 .shiki span {
   color: var(--shiki-light);
 }
-:root[data-theme="dark"] .content pre.shiki {
-  background-color: var(--shiki-dark-bg);
-}
-:root[data-theme="dark"] .shiki,
-:root[data-theme="dark"] .shiki span {
-  color: var(--shiki-dark);
-}
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .content pre.shiki {
+  .content pre.shiki {
     background-color: var(--shiki-dark-bg);
   }
-  :root:not([data-theme="light"]) .shiki,
-  :root:not([data-theme="light"]) .shiki span {
+  .shiki,
+  .shiki span {
     color: var(--shiki-dark);
   }
 }
@@ -805,20 +1078,24 @@ a.folder-label:hover {
   padding: 0.5rem 0;
 }
 
-/* ---- "Built with mdgarden" badge ------------------------------------------ */
+/* ---- "Built with mdgarden" badge ---------------------------------------- */
+/* Fixed floating chip, bottom-right of the viewport — always visible, never
+   scrolls with the article, and never reserves space inside any pane. */
 
 .powered-by-mdgarden {
   position: fixed;
-  bottom: 1rem;
   right: 1rem;
+  bottom: 1rem;
+  z-index: 15;
   font-size: 0.75rem;
-  opacity: 0.5;
   color: var(--color-muted);
   text-decoration: none;
-  z-index: 100;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
 }
 .powered-by-mdgarden:hover {
-  opacity: 0.7;
+  opacity: 1;
+  text-decoration: none;
 }
 
 /* ==========================================================================
@@ -830,9 +1107,10 @@ a.folder-label:hover {
   width: 400px;
   max-width: 90vw;
   max-height: 300px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   opacity: 0;
@@ -842,8 +1120,10 @@ a.folder-label:hover {
   pointer-events: none;
 }
 
-[data-theme='dark'] .md-popover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+@media (prefers-color-scheme: dark) {
+  .md-popover {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
 }
 
 .md-popover.is-visible {
@@ -867,4 +1147,19 @@ a.folder-label:hover {
 
 .md-popover-inner p:last-child {
   margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .sidebar,
+  .sidebar-scroll {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

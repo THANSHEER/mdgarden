@@ -7,7 +7,7 @@ import { buildTree, listFolders } from '../features/explorer.js';
 import { escapeAttr, escapeHtml } from '../utils.js';
 import { createMarkdown } from '../parser/markdown.js';
 import { collectCodeLangs, createCodeHighlighter, type HighlightFn } from '../parser/highlight.js';
-import { renderBody, renderDocument, type RenderContext } from '../parser/render.js';
+import { prepareBodyHtml, renderBody, renderDocument, type RenderContext } from '../parser/render.js';
 import { renderHomePage, renderNotFoundPage, buildTagMap, renderTagIndex, renderTagPage } from '../pages/generated.js';
 import { buildSearchIndex, buildGraph } from '../features/data.js';
 import { buildSitemap, buildRss, buildRobots } from '../features/feeds.js';
@@ -16,8 +16,8 @@ import { copyAsset, ensureCleanDir, writeOut } from './emit.js';
 import { getClientRuntime, getMermaidRuntime, getKatexCss, writeKatexFonts } from '../parser/assets.js';
 import { builtinPlugins } from '../plugins.js';
 import { VERSION } from '../version.js';
-import type { MdsitePlugin, PluginContext } from './plugin.js';
-import type { Page } from '../types.js';
+import type { MdgardenPlugin, PluginContext } from './plugin.js';
+import type { Heading, Page } from '../types.js';
 
 const META_FILENAME = 'mdgarden-meta.json';
 
@@ -36,7 +36,7 @@ export interface BuildOptions {
   /** Explicit path to mdgarden.config.json. */
   configPath?: string;
   /** Extra plugins, appended after the built-ins (programmatic use). */
-  plugins?: MdsitePlugin[];
+  plugins?: MdgardenPlugin[];
 }
 
 export interface BuildResult {
@@ -59,22 +59,11 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
     ? path.resolve(cwd, opts.outDir)
     : path.resolve(baseDir, config.build.outDir);
 
-  const { pages, assets } = await (async () => {
-    // Deprecation: old configs may still have build.ignore — warn and ignore it.
-    const legacyIgnore = (config.build as unknown as Record<string, unknown>).ignore;
-    if (Array.isArray(legacyIgnore) && legacyIgnore.length > 0) {
-      console.warn(
-        '\n⚠  build.ignore in mdgarden.config.json is no longer supported.\n' +
-        '   Move your patterns to .mdgardenignore instead.\n' +
-        '   See: https://github.com/THANSHEER/mdsite#mdgardenignore\n',
-      );
-    }
-    const ignorePatterns = await loadIgnorePatterns(baseDir);
-    return collectContent(contentDir, config, ignorePatterns);
-  })();
+  const ignorePatterns = await loadIgnorePatterns(baseDir);
+  const { pages, assets } = await collectContent(contentDir, config, ignorePatterns);
   const index = buildSiteIndex(pages, assets);
 
-  const plugins: MdsitePlugin[] = [...builtinPlugins(config), ...(opts.plugins ?? [])];
+  const plugins: MdgardenPlugin[] = [...builtinPlugins(config), ...(opts.plugins ?? [])];
   const pluginCtx: PluginContext = { config, pages, outDir };
 
   let highlight: HighlightFn | undefined;
@@ -83,56 +72,18 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
       // Load exactly the languages used in the content — supports any of shiki's
       // bundled grammars without a hardcoded allow-list.
       highlight = await createCodeHighlighter(collectCodeLangs(pages.map((p) => p.body)));
-    } catch {
-      highlight = undefined;
+    } catch (err) {
+      console.warn(`Syntax highlighting disabled for this build: ${(err as Error).message}`);
     }
   }
   const md = createMarkdown(config, { highlight, plugins });
 
-  // --- Incremental Cache Logic ---
-  const cachePath = path.join(cwd, '.mdgarden-cache.json');
-  let cache: Record<string, { mtimeMs: number; html: string; links: string[]; headings: any[]; description: string }> = {};
-  try {
-    const rawCache = await fs.readFile(cachePath, 'utf8');
-    cache = JSON.parse(rawCache);
-  } catch {}
-
-  let cachedCount = 0;
-  for (const page of pages) {
-    const cached = cache[page.sourcePath];
-    if (cached && cached.mtimeMs === page.mtimeMs && page.mtimeMs !== undefined) {
-      page.html = cached.html;
-      page.links = cached.links;
-      page.headings = cached.headings;
-      page.description = cached.description;
-      cachedCount++;
-    } else {
-      renderBody(md, page, index);
-    }
-  }
-
-  // Update Cache
-  const newCache: typeof cache = {};
-  for (const page of pages) {
-    if (page.mtimeMs !== undefined) {
-      newCache[page.sourcePath] = {
-        mtimeMs: page.mtimeMs,
-        html: page.html,
-        links: page.links,
-        headings: page.headings,
-        description: page.description,
-      };
-    }
-  }
-  try {
-    await fs.writeFile(cachePath, JSON.stringify(newCache));
-  } catch (e) {
-    console.warn('Failed to write incremental cache', e);
-  }
+  const cache = await readBuildCache(cwd);
+  const cachedCount = renderPages(md, pages, index, cache);
+  await writeBuildCache(cwd, pages);
   if (cachedCount > 0) {
     console.log(`\x1b[36m[cache]\x1b[0m Skipped markdown parsing for ${cachedCount} unchanged file(s)`);
   }
-  // ---------------------------------
 
   if (config.features.backlinks) computeBacklinks(pages, index);
 
@@ -142,9 +93,12 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
 
   let customCss = '';
   if (config.theme.customCss) {
+    const customCssPath = path.resolve(baseDir, config.theme.customCss);
     try {
-      customCss = await fs.readFile(path.resolve(baseDir, config.theme.customCss), 'utf8');
-    } catch {}
+      customCss = await fs.readFile(customCssPath, 'utf8');
+    } catch (err) {
+      console.warn(`Could not read theme.customCss at ${customCssPath}: ${(err as Error).message}`);
+    }
   }
 
   const ctx: RenderContext = {
@@ -164,6 +118,11 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
     const backlinks = page.backlinks
       .map((slug) => index.pages.get(slug))
       .filter((p): p is Page => p !== undefined);
+    const titleHeading = page.headings.find(
+      (heading) =>
+        heading.level === 1 &&
+        heading.text.trim().toLocaleLowerCase() === page.title.trim().toLocaleLowerCase(),
+    );
 
     const html = renderDocument(
       {
@@ -181,6 +140,7 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
         frontmatter: page.frontmatter,
         readingTime: page.readingTime,
         lang: page.lang,
+        titleId: titleHeading?.slug,
       },
       ctx,
     );
@@ -263,7 +223,9 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
   if (config.features.math) {
     try {
       await copyKatexAssets(outDir);
-    } catch {}
+    } catch (err) {
+      console.warn(`Could not copy KaTeX assets (math may be unstyled): ${(err as Error).message}`);
+    }
   }
 
   for (const asset of assets) {
@@ -334,5 +296,90 @@ function computeBacklinks(pages: Page[], index: ReturnType<typeof buildSiteIndex
         target.backlinks.push(page.slug);
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Incremental render cache (skip re-parsing markdown for unchanged files)
+// ---------------------------------------------------------------------------
+
+interface CachedPage {
+  mtimeMs: number;
+  html: string;
+  links: string[];
+  headings: Heading[];
+  description: string;
+}
+
+type BuildCache = Record<string, CachedPage>;
+
+const CACHE_FILENAME = '.mdgarden-cache.json';
+
+function isCachedPage(v: unknown): v is CachedPage {
+  return (
+    typeof v === 'object' && v !== null &&
+    typeof (v as CachedPage).mtimeMs === 'number' &&
+    typeof (v as CachedPage).html === 'string'
+  );
+}
+
+/** Read the previous build's cache, or an empty cache if there isn't one (or it's corrupt). */
+async function readBuildCache(cwd: string): Promise<BuildCache> {
+  try {
+    const raw = await fs.readFile(path.join(cwd, CACHE_FILENAME), 'utf8');
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    const cache: BuildCache = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (isCachedPage(value)) cache[key] = value;
+    }
+    return cache;
+  } catch {
+    return {}; // no previous build, or the cache file is unreadable/corrupt — start fresh.
+  }
+}
+
+/** Reuse cached HTML for pages whose mtime hasn't changed; render the rest. Returns the reused count. */
+function renderPages(
+  md: ReturnType<typeof createMarkdown>,
+  pages: Page[],
+  index: ReturnType<typeof buildSiteIndex>,
+  cache: BuildCache,
+): number {
+  let cachedCount = 0;
+  for (const page of pages) {
+    const cached = cache[page.sourcePath];
+    if (page.mtimeMs !== undefined && cached?.mtimeMs === page.mtimeMs) {
+      page.html = cached.html;
+      page.links = cached.links;
+      page.headings = cached.headings;
+      page.description = cached.description;
+      cachedCount++;
+    } else {
+      renderBody(md, page, index);
+    }
+    prepareBodyHtml(page);
+  }
+  return cachedCount;
+}
+
+/** Persist the freshly rendered pages as the cache for the next build. */
+async function writeBuildCache(cwd: string, pages: Page[]): Promise<void> {
+  const cache: BuildCache = {};
+  for (const page of pages) {
+    if (page.mtimeMs !== undefined) {
+      cache[page.sourcePath] = {
+        mtimeMs: page.mtimeMs,
+        html: page.html,
+        links: page.links,
+        headings: page.headings,
+        description: page.description,
+      };
+    }
+  }
+  try {
+    await fs.writeFile(path.join(cwd, CACHE_FILENAME), JSON.stringify(cache));
+  } catch (err) {
+    console.warn(`Failed to write incremental cache: ${(err as Error).message}`);
   }
 }

@@ -1,6 +1,6 @@
 // Shared utility helpers (HTML escaping, text manipulation) and UI strings (i18n).
 
-import type { MdsiteConfig } from './types.js';
+import type { MdgardenConfig } from './types.js';
 
 // ---------------------------------------------------------------------------
 // HTML helpers
@@ -53,17 +53,23 @@ export const UI = {
   pageNotFound: 'Page not found',
   pageNotFoundBody: 'Sorry, this page could not be found.',
   backHome: '← Back home',
-  toggleDark: 'Toggle dark mode',
   minRead: 'min read',
   noNotes: 'No notes published yet.',
   tags: 'Tags',
   home: 'Home',
   menu: 'Menu',
+  close: 'Close',
+  skipToContent: 'Skip to content',
+  siteNavigation: 'Site navigation',
+  supplementary: 'On this page and related notes',
+  searchResults: 'Search results',
+  graphBrowse: 'Browse graph links',
+  graphInstructions: 'Interactive note graph. Use the link list below for keyboard navigation.',
 } as const;
 
 export type UIKey = keyof typeof UI;
 
 /** Translate key to localized string. */
-export function t(key: UIKey, config?: Pick<MdsiteConfig, 'ui'>): string {
+export function t(key: UIKey, config?: Pick<MdgardenConfig, 'ui'>): string {
   return config?.ui?.[key] ?? UI[key];
 }

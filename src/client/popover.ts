@@ -5,10 +5,13 @@ let hoverTimer: number | null = null;
 let currentPopover: HTMLElement | null = null;
 
 export function initPopovers(): void {
+  if (document.getElementById('md-popover')) return;
+
   // Create popover container
   const popover = document.createElement('div');
   popover.id = 'md-popover';
   popover.className = 'md-popover';
+  popover.setAttribute('role', 'tooltip');
   document.body.appendChild(popover);
 
   const hidePopover = () => {
@@ -107,4 +110,8 @@ export function initPopovers(): void {
       hidePopover();
     }
   }, { passive: true });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') hidePopover();
+  });
 }

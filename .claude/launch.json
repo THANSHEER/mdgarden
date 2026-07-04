@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vault-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "vault:dev"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

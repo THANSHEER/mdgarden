@@ -1,7 +1,7 @@
 // Plugin system for mdgarden.
 
 import type MarkdownIt from 'markdown-it';
-import type { MdsiteConfig, Page } from '../types.js';
+import type { MdgardenConfig, Page } from '../types.js';
 
 export type PageKind = 'note' | 'home' | 'tag' | 'folder' | '404';
 
@@ -24,27 +24,27 @@ export interface EmitFile {
 
 /** Build-wide context handed to the page/emit hooks. */
 export interface PluginContext {
-  config: MdsiteConfig;
+  config: MdgardenConfig;
   pages: Page[];
   outDir: string;
 }
 
 /** Plugin interface for extending the build pipeline. */
-export interface MdsitePlugin {
+export interface MdgardenPlugin {
   name: string;
-  markdown?(md: MarkdownIt, config: MdsiteConfig): void;
+  markdown?(md: MarkdownIt, config: MdgardenConfig): void;
   page?(page: Page, ctx: PluginContext): void | Promise<void>;
-  head?(info: RenderInfo, config: MdsiteConfig): string;
-  bodyEnd?(info: RenderInfo, config: MdsiteConfig): string;
+  head?(info: RenderInfo, config: MdgardenConfig): string;
+  bodyEnd?(info: RenderInfo, config: MdgardenConfig): string;
   emit?(ctx: PluginContext): EmitFile[] | Promise<EmitFile[]>;
 }
 
 /** Collect HTML from plugin hooks. */
 export function collectHtml(
-  plugins: MdsitePlugin[],
+  plugins: MdgardenPlugin[],
   hook: 'head' | 'bodyEnd',
   info: RenderInfo,
-  config: MdsiteConfig,
+  config: MdgardenConfig,
 ): string {
   let out = '';
   for (const p of plugins) {

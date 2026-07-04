@@ -4,7 +4,7 @@ export { VERSION } from './version.js';
 export { build } from './core/build.js';
 export type { BuildOptions, BuildResult } from './core/build.js';
 export type {
-  MdsitePlugin,
+  MdgardenPlugin,
   PluginContext,
   RenderInfo,
   EmitFile,
@@ -16,13 +16,12 @@ export type { RedesignOptions, RedesignResult } from './cli/wizard.js';
 export { publishSite, publishToGithubPages, publishToCloudflare } from './core/deploy.js';
 export type { PublishOptions, PublishResult } from './core/deploy.js';
 export type {
-  MdsiteConfig,
+  MdgardenConfig,
   SiteConfig,
   ThemeConfig,
   ThemeColors,
   FeatureFlags,
   NavItem,
-  FooterConfig,
   BuildConfig,
   DeployConfig,
   Page,

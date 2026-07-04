@@ -1,6 +1,6 @@
 # Claude / AI Assistant Guidelines
 
-This file provides crucial context for any AI assistant (like Claude, GitHub Copilot, Gemini, etc.) working on the `mdsite` repository. Please read this before proposing architectural changes or adding new features.
+This file provides crucial context for any AI assistant (like Claude, GitHub Copilot, Gemini, etc.) working on the `mdgarden` repository. Please read this before proposing architectural changes or adding new features.
 
 ## Project Goal
 `mdgarden` is a lightning-fast, zero-config static site generator that turns a folder of Markdown notes into a fully-featured digital garden (with backlinks, local/global interactive graphs, and search). 
@@ -26,6 +26,8 @@ The source code (`src/`) is strictly modularized by domain:
    `mdgarden` can be compiled into a standalone binary. Asset loading (like `mdgarden.client.js` or KaTeX fonts) is handled via `src/parser/assets.ts` which uses `node:sea` to read assets when bundled. Do not use standard `fs.readFile` for core assets without utilizing the asset resolver.
 4. **Do not hardcode versions.**
    The version number is defined exclusively in `package.json`. It is injected globally into the runtime as `MDGARDEN_VERSION` via `esbuild.config.mjs` using `define`. Use `export const VERSION = typeof MDGARDEN_VERSION !== 'undefined' ? MDGARDEN_VERSION : 'unknown';` as seen in `src/index.ts`.
+5. **Do not perform version-control or release actions.**
+   Only the repository owner performs these actions. Never stage, commit, tag, push, publish, or create pull requests. You may inspect Git state, edit files, run tests, and suggest commands for the owner.
 
 ## ✅ What You SHOULD Do
 
@@ -33,4 +35,5 @@ The source code (`src/`) is strictly modularized by domain:
    Use standard TypeScript, ESModules (`type: module`), and maintain strict typing.
 2. **Write tests for new features.**
    Place tests in the `test/` directory using `vitest`. Ensure you test edge cases using the dummy markdown files in `test/fixtures/`.
-
+3. **Sanity-check UI/layout changes against the test vault.**
+   `test_vault/` is a small sample vault checked into the repo for manual verification (wikilinks, callouts, math, code, media). Run `npm run vault:build` (one-shot) or `npm run vault:dev` (live reload at `http://localhost:3000`) to see real rendered output before calling a visual change done.
