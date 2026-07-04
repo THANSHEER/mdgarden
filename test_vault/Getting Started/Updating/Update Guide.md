@@ -29,7 +29,14 @@ Use the built-in updater:
 mdgarden update
 ```
 
-It detects the install type automatically:
+Add `--background` if you want the update to run detached and return control
+immediately:
+
+```bash
+mdgarden update --background
+```
+
+It automatically chooses the right update path:
 
 - standalone installs re-run the bundled installer against the current binary
   directory;

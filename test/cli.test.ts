@@ -31,7 +31,7 @@ describe('mdgarden --help / --version', () => {
   it('lists all commands', async () => {
     const { stdout, code } = await runCli(['--help'], process.cwd());
     expect(code).toBe(0);
-    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'config', 'update', 'publish']) {
+    for (const cmd of ['build', 'rebuild', 'serve', 'init', 'redesign', 'update', 'config', 'publish']) {
       expect(stdout).toContain(cmd);
     }
   });
@@ -167,6 +167,14 @@ describe('mdgarden config get/set/unset', () => {
     const { stderr, code } = await runCli(['config', 'get', 'site.nope'], dir);
     expect(code).toBe(1);
     expect(stderr).toContain('No such config key');
+  });
+});
+
+describe('mdgarden update', () => {
+  it('shows the new update command', async () => {
+    const { stdout, code } = await runCli(['--help'], process.cwd());
+    expect(code).toBe(0);
+    expect(stdout).toContain('update');
   });
 });
 

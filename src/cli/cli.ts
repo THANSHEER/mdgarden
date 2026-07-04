@@ -138,6 +138,23 @@ cli
   });
 
 cli
+  .command('update', 'Update mdgarden to the latest available version')
+  .option('-b, --background', 'Run the update in the background and return immediately')
+  .action(async (options: { background?: boolean }) => {
+    try {
+      const plan = await buildUpdatePlan();
+      if (options.background) plan.detached = true;
+      console.log(`Updating via ${plan.source}...`);
+      console.log(plan.note);
+      await runUpdatePlan(plan);
+      console.log(options.background ? '✓ Update scheduled' : '✓ Update complete');
+    } catch (err) {
+      console.error(`✗ Update failed: ${(err as Error).message}`);
+      process.exitCode = 1;
+    }
+  });
+
+cli
   .command(
     'config <action> [key] [value]',
     'Read or edit mdgarden.config.json: "config get [key]", "config set <key> <value>", "config unset <key>"',

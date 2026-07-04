@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 
 const INSTALL_SH_URL = 'https://raw.githubusercontent.com/THANSHEER/mdgarden/main/scripts/install.sh';
@@ -11,8 +12,8 @@ export interface UpdatePlan {
   command: string;
   args: string[];
   env?: NodeJS.ProcessEnv;
-  detached?: boolean;
   note: string;
+  detached?: boolean;
 }
 
 function normalizePath(filePath: string): string {
@@ -23,18 +24,29 @@ function escapePowerShellSingleQuoted(value: string): string {
   return value.replace(/'/g, "''");
 }
 
+function resolveRealPath(filePath: string): string {
+  try {
+    return normalizePath(realpathSync(filePath));
+  } catch {
+    return normalizePath(filePath);
+  }
+}
+
 export function detectUpdateSource(execPath = process.execPath): UpdateSource {
   const normalized = normalizePath(execPath);
   if (normalized.includes('/Cellar/mdgarden/')) return 'homebrew';
-  if (path.basename(normalized).toLowerCase() === 'mdgarden' || path.basename(normalized).toLowerCase() === 'mdgarden.exe') {
-    return 'standalone';
-  }
+  const base = path.basename(normalized).toLowerCase();
+  if (base === 'mdgarden' || base === 'mdgarden.exe') return 'standalone';
   return 'npm';
 }
 
-export function buildUpdatePlan(execPath = process.execPath, platform = process.platform): UpdatePlan {
-  const source = detectUpdateSource(execPath);
-  const installDir = path.dirname(execPath);
+export function buildUpdatePlan(
+  execPath = process.execPath,
+  platform = process.platform,
+): UpdatePlan {
+  const realExecPath = resolveRealPath(execPath);
+  const source = detectUpdateSource(realExecPath);
+  const installDir = path.dirname(realExecPath);
 
   if (source === 'homebrew') {
     return {
@@ -82,36 +94,29 @@ export function buildUpdatePlan(execPath = process.execPath, platform = process.
     source,
     command: 'npm',
     args: ['install', '-g', 'mdgarden@latest'],
-    note: 'npm-global installs update with `npm install -g mdgarden@latest`.',
+    note: 'npm installs update with `npm install -g mdgarden@latest`.',
   };
 }
 
 export async function runUpdatePlan(plan: UpdatePlan): Promise<void> {
-  if (plan.detached) {
-    await new Promise<void>((resolve, reject) => {
-      const child = spawn(plan.command, plan.args, {
-        detached: true,
-        stdio: 'ignore',
-        env: plan.env,
-      });
-      child.once('error', reject);
-      child.once('spawn', () => {
-        child.unref();
-        resolve();
-      });
-    });
-    return;
-  }
-
   await new Promise<void>((resolve, reject) => {
     const child = spawn(plan.command, plan.args, {
+      detached: Boolean(plan.detached),
       env: plan.env,
-      stdio: 'inherit',
+      stdio: plan.detached ? 'ignore' : 'inherit',
+      shell: false,
     });
-    child.on('error', reject);
-    child.on('exit', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`${plan.command} exited with code ${code ?? 'unknown'}`));
+    child.once('error', reject);
+    child.once('spawn', () => {
+      if (plan.detached) {
+        child.unref();
+        resolve();
+        return;
+      }
+      child.once('exit', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`${plan.command} exited with code ${code ?? 'unknown'}`));
+      });
     });
   });
 }
