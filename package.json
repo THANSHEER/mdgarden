@@ -1,6 +1,6 @@
 {
   "name": "mdgarden",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Turn a folder of Markdown notes into a fast, framework-free static website.",
   "type": "module",
   "bin": {
@@ -46,7 +46,7 @@
     "wikilinks"
   ],
   "author": "Mohammed Thanseer",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/THANSHEER/mdgarden.git"

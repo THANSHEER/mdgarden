@@ -29,7 +29,7 @@ is organized to keep that promise.
 ## Author & license
 
 Built and maintained by Mohammed Thanseer. Source is published under
-[GPL-3.0-or-later](https://github.com/THANSHEER/mdgarden/blob/main/LICENSE).
+[MIT](https://github.com/THANSHEER/mdgarden/blob/main/LICENSE).
 
 ## Links
 
