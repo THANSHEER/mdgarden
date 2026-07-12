@@ -1,0 +1,38 @@
+{
+  "id": "rose",
+  "label": "Rosé",
+  "hint": "Warm rose + plum, soft contrast",
+  "fonts": {
+    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "body": "Inter, system-ui, -apple-system, sans-serif",
+    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+  },
+  "colors": {
+    "light": {
+      "background": "#fbf6f6",
+      "text": "#3a2b32",
+      "primary": "#a14a6b",
+      "accent": "#d98ca6",
+      "muted": "#7a6068",
+      "border": "#ecdde1",
+      "surface": "#ffffff"
+    },
+    "dark": {
+      "background": "#1b1417",
+      "text": "#f0e3e8",
+      "primary": "#d98ca6",
+      "accent": "#e0a7bd",
+      "muted": "#a98e98",
+      "border": "#352830",
+      "surface": "#231a1e"
+    }
+  },
+  "layout": {
+    "breakpoints": {
+      "mobile": "36rem",
+      "tablet": "56rem",
+      "laptop": "80rem",
+      "desktop": "100rem"
+    }
+  }
+}

@@ -59,3 +59,19 @@ export function initSidebarToggle(): void {
     if (event.matches) setOpen(false, false);
   });
 }
+
+export function initThemeToggle(): void {
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.theme-toggle-btn');
+    if (!btn) return;
+
+    let theme = document.documentElement.dataset.theme;
+    if (!theme) {
+      theme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem('mdgarden-theme', nextTheme);
+  });
+}

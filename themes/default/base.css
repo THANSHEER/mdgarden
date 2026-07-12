@@ -185,6 +185,45 @@ a:hover {
   justify-content: space-between;
   gap: 0.5rem;
 }
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.theme-toggle-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+.theme-toggle-btn .sun-icon {
+  display: none;
+}
+.theme-toggle-btn .moon-icon {
+  display: block;
+}
+html[data-theme="dark"] .theme-toggle-btn .sun-icon {
+  display: block;
+}
+html[data-theme="dark"] .theme-toggle-btn .moon-icon {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .theme-toggle-btn .sun-icon {
+    display: block;
+  }
+  html:not([data-theme="light"]) .theme-toggle-btn .moon-icon {
+    display: none;
+  }
+}
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -231,6 +270,16 @@ a:hover {
   font-size: 0.85rem;
   flex-shrink: 0;
 }
+
+
+
+.mobile-bar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .search-trigger {
   display: flex;
   align-items: center;
@@ -337,14 +386,10 @@ a:hover {
 .explorer-folder.is-open > .explorer-children {
   display: flex;
 }
-.explorer-file a,
-.folder-label {
+.explorer-file a {
   color: var(--color-muted);
-  /* Block, not flex: text-overflow only ellipsizes a box's own text content
-     reliably when that box isn't itself a flex container (the text becomes
-     an unshrinkable anonymous flex item otherwise and just overflows). */
   display: block;
-  padding: 0.3rem 0.5rem;
+  padding: 0.35rem 0.5rem 0.35rem 1.75rem;
   border-radius: 6px;
   white-space: nowrap;
   overflow: hidden;
@@ -352,12 +397,7 @@ a:hover {
   transition: color 0.15s ease, background 0.15s ease;
   font-size: 0.88rem;
 }
-/* Files have no chevron, so indent them to line up under folder labels. */
-.explorer-file a {
-  padding-left: 1.75rem;
-}
-.explorer-file a:hover,
-a.folder-label:hover {
+.explorer-file a:hover {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   text-decoration: none;
@@ -380,44 +420,66 @@ a.folder-label:hover {
   background: var(--color-primary);
   transform: translateY(-50%);
 }
-.folder-label {
-  font-weight: 600;
-  color: var(--color-text);
-  flex: 1;
-  min-width: 0;
-}
+
 .explorer-folder {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
 }
-.explorer-folder > .explorer-children {
-  flex: 1 0 100%;
-}
-.folder-toggle {
-  flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--color-muted);
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
+
+.folder-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease, background 0.2s ease;
+  gap: 0.35rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 6px;
+  color: var(--color-muted);
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.folder-toggle:hover {
+.folder-header:hover, .folder-header:focus-within {
   color: var(--color-text);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
+.folder-header:hover .folder-label {
+  color: var(--color-text);
+}
+
+.folder-label {
+  font-weight: 600;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+}
+a.folder-label {
+  text-decoration: none;
+}
+a.folder-label:hover {
+  text-decoration: none;
+}
+
+.folder-toggle {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .folder-toggle svg {
+  width: 14px;
+  height: 14px;
   transition: transform 0.15s ease;
 }
-.explorer-folder.is-open > .folder-toggle svg {
+.explorer-folder.is-open > .folder-header .folder-toggle svg {
   transform: rotate(90deg);
 }
 
@@ -856,6 +918,14 @@ a.folder-label:hover {
   font-size: 0.82rem;
   margin-top: 0.15rem;
 }
+.search-highlight {
+  background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  color: var(--color-text);
+  font-weight: 600;
+  border-radius: 3px;
+  padding: 0 0.15em;
+  margin: 0 -0.05em;
+}
 
 /* ---- Graph (Phase B) ---------------------------------------------------- */
 
@@ -891,6 +961,36 @@ a.folder-label:hover {
   position: relative;
   margin-top: 0.75rem;
 }
+.graph-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+.graph-control-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.graph-control-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
 .graph canvas {
   width: 100%;
   height: 220px;
@@ -918,20 +1018,61 @@ a.folder-label:hover {
 .graph-tooltip {
   position: absolute;
   z-index: 5;
-  padding: 0.3rem 0.55rem;
+  padding: 0.45rem 0.65rem;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.78rem;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+.graph-tooltip[hidden] {
+  display: none;
+  opacity: 0;
+}
+.graph-tooltip-title {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.graph-tooltip-badge {
+  font-size: 0.72rem;
+  color: var(--color-muted);
 }
 
 /* ---- Responsive --------------------------------------------------------- */
 
-@media (max-width: 80rem) {
+/* Ultra-wide screens (≥ 1600px) */
+@media (min-width: @bp-desktop) {
+  .layout {
+    width: min(100%, 200rem); /* room up to ~3200px */
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr) minmax(18rem, 26rem);
+    padding-inline: clamp(2rem, 4vw, 5rem);
+  }
+  .layout.no-right {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 92ch);
+  }
+  .sidebar-logo {
+    width: 144px;
+    height: 144px;
+  }
+  .sidebar-logo-mark svg {
+    width: 60%;
+    height: 60%;
+  }
+  .graph canvas {
+    height: 300px;
+  }
+}
+
+@media (max-width: @bp-laptop) {
   .layout {
     width: min(100%, 78rem);
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
@@ -977,7 +1118,7 @@ a.folder-label:hover {
     background: rgba(0, 0, 0, 0.4);
   }
 }
-@media (max-width: 56rem) {
+@media (max-width: @bp-tablet) {
   /* Single stacked column: nothing left to split into independent panes,
      so fall back to one continuous page scroll (content, then TOC/graph/backlinks). */
   body {
@@ -1019,7 +1160,7 @@ a.folder-label:hover {
     text-align: center;
   }
 }
-@media (max-width: 36rem) {
+@media (max-width: @bp-mobile) {
   .page-title {
     font-size: clamp(1.75rem, 9vw, 2.1rem);
   }
@@ -1040,7 +1181,7 @@ a.folder-label:hover {
     font-size: 0.82rem;
   }
 }
-@media (max-height: 43.75rem) and (min-width: 80.01rem) {
+@media (max-height: 43.75rem) and (min-width: calc(@bp-laptop + 0.01rem)) {
   .layout {
     padding-top: 0.75rem;
   }
@@ -1104,70 +1245,107 @@ a.folder-label:hover {
 .md-popover {
   position: fixed;
   z-index: 1000;
-  width: 440px;
-  max-width: 90vw;
-  max-height: 280px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, white 4%), var(--color-surface));
+  width: 420px;
+  max-width: calc(100vw - 2rem);
+  max-height: 300px;
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 4px;
   color: var(--color-text);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.14), 0 6px 18px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 16px 40px rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(5px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  transform: translateY(6px) scale(0.98);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
   pointer-events: none;
 }
 
 @media (prefers-color-scheme: dark) {
   .md-popover {
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.3),
+      0 16px 40px rgba(0, 0, 0, 0.45),
+      0 2px 4px rgba(0, 0, 0, 0.2);
   }
 }
 
 .md-popover.is-visible {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   pointer-events: auto;
 }
 
 .md-popover-inner {
-  padding: 1rem 1rem 0.9rem;
+  padding: 0.9rem 1rem 0.85rem;
   overflow-y: auto;
-  max-height: 280px;
-  font-size: 0.94rem;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.md-popover-title {
+  font-family: var(--font-heading);
+  font-size: 0.97rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .md-popover-summary {
-  margin: 0.55rem 0 0;
+  margin: 0;
   color: var(--color-muted);
+  font-size: 0.875rem;
   line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .md-popover-footer {
-  margin: 0.85rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.md-popover-url {
+  font-family: var(--font-code);
   font-size: 0.72rem;
   color: var(--color-muted);
-  word-break: break-all;
+  background: color-mix(in srgb, var(--color-muted) 10%, transparent);
+  padding: 0.15em 0.5em;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
 }
 
-.md-popover-footer span {
-  display: block;
-}
-
-.md-popover-inner h1 {
-  font-size: 1.25em;
-  margin-top: 0;
+.md-popover-cta {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
 }
 
 .md-popover-inner p:last-child {
   margin-bottom: 0;
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   html,

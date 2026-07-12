@@ -22,7 +22,12 @@ describe('generated accessibility and responsive foundations', () => {
     out = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-a11y-'));
     await build({ cwd: fixtures, contentDir: '.', outDir: out });
     html = await fs.readFile(path.join(out, 'getting-started/index.html'), 'utf8');
-    css = await fs.readFile(themeCss, 'utf8');
+    const rawCss = await fs.readFile(themeCss, 'utf8');
+    css = rawCss
+      .replace(/@bp-mobile/g, '36rem')
+      .replace(/@bp-tablet/g, '56rem')
+      .replace(/@bp-laptop/g, '80rem')
+      .replace(/@bp-desktop/g, '100rem');
   });
 
   afterAll(async () => {

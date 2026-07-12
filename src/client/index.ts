@@ -2,7 +2,7 @@
 import { initSearch } from './search.js';
 import { initGraph } from './graph.js';
 import { initExplorer } from './explorer.js';
-import { initSidebarToggle } from './sidebar.js';
+import { initSidebarToggle, initThemeToggle } from './sidebar.js';
 import { initToc } from './toc.js';
 import { initPopovers } from './popover.js';
 import { initTransitions } from './transitions.js';
@@ -29,6 +29,7 @@ function start(): void {
   initGraph();
   initExplorer();
   initSidebarToggle();
+  initThemeToggle();
   initToc();
   initPopovers();
   initTransitions();

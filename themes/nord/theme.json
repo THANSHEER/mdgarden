@@ -1,0 +1,38 @@
+{
+  "id": "nord",
+  "label": "Nord",
+  "hint": "Cool nordic blue-grey",
+  "fonts": {
+    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "body": "Inter, system-ui, -apple-system, sans-serif",
+    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+  },
+  "colors": {
+    "light": {
+      "background": "#f4f6f9",
+      "text": "#2e3440",
+      "primary": "#5e81ac",
+      "accent": "#88c0d0",
+      "muted": "#5b6675",
+      "border": "#dce1e8",
+      "surface": "#ffffff"
+    },
+    "dark": {
+      "background": "#2e3440",
+      "text": "#eceff4",
+      "primary": "#88c0d0",
+      "accent": "#8fbcbb",
+      "muted": "#a9b1c0",
+      "border": "#3b4252",
+      "surface": "#3b4252"
+    }
+  },
+  "layout": {
+    "breakpoints": {
+      "mobile": "36rem",
+      "tablet": "56rem",
+      "laptop": "80rem",
+      "desktop": "100rem"
+    }
+  }
+}

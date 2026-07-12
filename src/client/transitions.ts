@@ -47,7 +47,7 @@ export function initTransitions(): void {
         window.history.pushState({}, '', href);
       });
     } catch (err) {
-      console.error('View transition failed, falling back to normal navigation', err);
+      console.error('View transition failed, falling back to standard navigation', err);
       window.location.href = href;
     }
   });

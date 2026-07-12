@@ -137,8 +137,9 @@ export function initSearch(): void {
       .map((hit) => {
         const doc = docs.get(String(hit.id));
         if (!doc) return '';
-        const excerpt = excerptFor(doc.content, q);
-        return `<li><a href="${escapeAttr(doc.url)}">${escapeHtml(doc.title)}<span class="search-result-excerpt">${escapeHtml(excerpt)}</span></a></li>`;
+        const titleHtml = highlightText(doc.title, q);
+        const excerptHtml = highlightText(excerptFor(doc.content, q), q);
+        return `<li><a href="${escapeAttr(doc.url)}">${titleHtml}<span class="search-result-excerpt">${excerptHtml}</span></a></li>`;
       })
       .join('');
   }
@@ -169,4 +170,53 @@ function excerptFor(content: string, query: string): string {
   const start = idx > 50 ? idx - 50 : 0;
   const slice = content.slice(start, start + 140);
   return `${start > 0 ? '…' : ''}${slice}${content.length > start + 140 ? '…' : ''}`;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightText(text: string, query: string): string {
+  if (!query.trim()) return escapeHtml(text);
+  const terms = query.split(/\s+/).filter((t) => t.length > 0).map(escapeRegExp);
+  if (terms.length === 0) return escapeHtml(text);
+  
+  const regex = new RegExp(`(${terms.join('|')})`, 'gi');
+  let match;
+  const ranges: { start: number; end: number }[] = [];
+  
+  while ((match = regex.exec(text)) !== null) {
+    const start = match.index;
+    const end = regex.lastIndex;
+    if (end === start) {
+      regex.lastIndex++;
+      continue;
+    }
+    ranges.push({ start, end });
+  }
+
+  if (ranges.length === 0) return escapeHtml(text);
+  
+  const merged: { start: number; end: number }[] = [];
+  let current = ranges[0];
+  for (let i = 1; i < ranges.length; i++) {
+    const r = ranges[i];
+    if (r.start <= current.end) {
+      current.end = Math.max(current.end, r.end);
+    } else {
+      merged.push(current);
+      current = r;
+    }
+  }
+  merged.push(current);
+
+  let result = '';
+  let lastIndex = 0;
+  for (const range of merged) {
+    result += escapeHtml(text.slice(lastIndex, range.start));
+    result += `<mark class="search-highlight">${escapeHtml(text.slice(range.start, range.end))}</mark>`;
+    lastIndex = range.end;
+  }
+  result += escapeHtml(text.slice(lastIndex));
+  return result;
 }

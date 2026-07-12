@@ -1,25 +1,58 @@
 name: Release
 
-# Fires when you push a version tag, e.g. `git tag v0.3.0 && git push --tags`.
+# Fires when you merge to main. If package.json version is bumped, it will
+# automatically create a tag and publish.
 # Publishes: npm package, standalone binaries (GitHub Release assets), and an
 # updated Homebrew formula in the tap repo.
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write # create the release + upload assets
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      tag_name: ${{ steps.check.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check version and Tag
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "Tag $TAG already exists. No release needed."
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist. Creating it."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
+            gh release create "$TAG" --title "$TAG" --generate-notes
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          fi
+
   # 1) npm — the canonical channel (CLI + npx + library). Publishes via npm
   #    Trusted Publisher (OIDC) — no NPM_TOKEN secret needed.
   npm:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write # mint the OIDC token for npm Trusted Publishing
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-version.outputs.tag_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,6 +64,8 @@ jobs:
 
   # 2) Standalone binaries via Node SEA — one job per OS/arch (SEA can't cross-compile).
   binaries:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +78,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-version.outputs.tag_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22 # actions/setup-node provides an official, SEA-capable Node
@@ -58,15 +95,19 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.check-version.outputs.tag_name }}
           files: mdgarden-${{ matrix.target }}.${{ matrix.ext }}
 
   # 3) Homebrew — refresh the tap formula's version + sha256 from the release assets.
   #    Needs a TAP_REPO_TOKEN secret (PAT with write access to THANSHEER/homebrew-tap).
   homebrew:
-    needs: [binaries]
+    needs: [check-version, binaries]
+    if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-version.outputs.tag_name }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -76,7 +117,7 @@ jobs:
         run: |
           mkdir -p build/release
           for t in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
-            gh release download "${GITHUB_REF_NAME}" -p "mdgarden-$t.tar.gz" -D build/release
+            gh release download "${{ needs.check-version.outputs.tag_name }}" -p "mdgarden-$t.tar.gz" -D build/release
           done
       - run: node scripts/update-formula.mjs build/release
       - name: Commit formula to tap
@@ -90,6 +131,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/mdgarden.rb
-          git commit -m "mdgarden ${GITHUB_REF_NAME}" || { echo "no changes"; exit 0; }
+          git commit -m "mdgarden ${{ needs.check-version.outputs.tag_name }}" || { echo "no changes"; exit 0; }
           git branch -M main          # works for a brand-new empty tap repo too
           git push -u origin main

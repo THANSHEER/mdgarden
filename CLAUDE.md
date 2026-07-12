@@ -14,7 +14,7 @@ The source code (`src/`) is strictly modularized by domain:
 - **`src/core/`**: The core build orchestrator (`build.ts`), configuration resolution (`config.ts`), file emission (`emit.ts`), and the plugin architecture.
 - **`src/parser/`**: Everything related to transforming Markdown into HTML (markdown-it plugins, syntax highlighting, asset path resolution).
 - **`src/features/`**: Static data generators that run at build-time to emit JSON (e.g., `graph.ts` for the network graph, `search.ts` for the search index, `explorer.ts` for the folder tree).
-- **`src/client/`**: **BROWSER RUNTIME CODE.** This code runs on the client-side. It manages the interactive search modal, force-directed graph UI, dark mode toggles, and popovers.
+- **`src/client/`**: **BROWSER RUNTIME CODE.** This code runs on the client-side. It manages the interactive search modal, force-directed graph UI, and popovers.
 
 ## 🛑 What NOT To Do
 

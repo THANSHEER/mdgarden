@@ -8,11 +8,11 @@ function withDarkMode(mode: MdgardenConfig['theme']['darkMode']): MdgardenConfig
 }
 
 describe('buildStyles', () => {
-  it('"auto": emits light vars by default plus a prefers-color-scheme dark block, with no on-site control', () => {
+  it('"auto": emits light vars by default plus a prefers-color-scheme dark block, with on-site control support', () => {
     const css = buildStyles(withDarkMode('auto'));
-    expect(css).toContain(':root{--color-bg:#faf8f8');
-    expect(css).toContain('@media (prefers-color-scheme:dark){:root{--color-bg:#161618');
-    expect(css).not.toContain('data-theme');
+    expect(css).toContain(':root, :root[data-theme="light"] { --color-bg:#faf8f8');
+    expect(css).toContain('@media (prefers-color-scheme: dark)');
+    expect(css).toContain(':root[data-theme="dark"] { --color-bg:#161618');
   });
 
   it('"light": only emits light vars, no dark block at all', () => {
