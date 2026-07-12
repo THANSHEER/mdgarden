@@ -26,16 +26,50 @@ export interface ThemeColors {
   surface: string;
 }
 
-export type DarkModeMode = 'auto' | 'light' | 'dark';
+export interface ThemeLayout {
+  breakpoints: {
+    mobile: string;
+    tablet: string;
+    laptop: string;
+    desktop: string;
+  };
+}
+
+export interface MdgardenTheme {
+  name: string;
+  darkMode: 'auto' | 'light' | 'dark';
+  colors: {
+    light: ThemeColors;
+    dark: ThemeColors;
+  };
+  fonts: {
+    heading: string;
+    body: string;
+    code: string;
+  };
+  layout: ThemeLayout;
+}
+
+export interface ThemePreset {
+  id: string;
+  label: string;
+  hint: string;
+  colors: { light: ThemeColors; dark: ThemeColors };
+  fonts: { heading: string; body: string; code: string };
+  layout: ThemeLayout;
+}
 
 export interface ThemeConfig {
   name: string;
   darkMode: DarkModeMode;
   colors: { light: ThemeColors; dark: ThemeColors };
   fonts: { heading: string; body: string; code: string };
+  layout: ThemeLayout;
   /** Optional path (relative to the config file) to extra CSS appended last. */
   customCss?: string;
 }
+
+export type DarkModeMode = 'auto' | 'light' | 'dark';
 
 export interface NavItem {
   title: string;

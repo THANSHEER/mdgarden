@@ -1,0 +1,38 @@
+{
+  "id": "forest",
+  "label": "Forest",
+  "hint": "Calm greens, garden feel",
+  "fonts": {
+    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "body": "Inter, system-ui, -apple-system, sans-serif",
+    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+  },
+  "colors": {
+    "light": {
+      "background": "#f6f8f4",
+      "text": "#26302a",
+      "primary": "#2f6f4f",
+      "accent": "#7fae6f",
+      "muted": "#5f6b5f",
+      "border": "#dde6da",
+      "surface": "#ffffff"
+    },
+    "dark": {
+      "background": "#141a16",
+      "text": "#e6ede6",
+      "primary": "#82c79a",
+      "accent": "#9fd08a",
+      "muted": "#9aa79a",
+      "border": "#2a352d",
+      "surface": "#1b231d"
+    }
+  },
+  "layout": {
+    "breakpoints": {
+      "mobile": "36rem",
+      "tablet": "56rem",
+      "laptop": "80rem",
+      "desktop": "100rem"
+    }
+  }
+}

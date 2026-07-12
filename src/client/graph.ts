@@ -90,8 +90,8 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   if (!ctx) return;
 
   const dpr = window.devicePixelRatio || 1;
-  let width = container.clientWidth || 220;
-  const height = 220;
+  let width = container.clientWidth || 240;
+  const height = 280;
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   canvas.style.height = `${height}px`;
@@ -122,6 +122,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   let frame = 0;
   let settled = false;
   let rafId = 0;
+  let hoveredNode: SimNode | null = null;
 
   function setData(sub: GraphData): void {
     if (rafId) cancelAnimationFrame(rafId);
@@ -175,7 +176,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   }
 
   function tick(): boolean {
-    // Repulsion.
+    // Repulsion — higher constant spreads nodes out more on the larger canvas.
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i];
@@ -189,7 +190,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
           d2 = 1;
         }
         const d = Math.sqrt(d2);
-        const f = 700 / d2;
+        const f = 1200 / d2;
         const fx = (dx / d) * f;
         const fy = (dy / d) * f;
         if (!a.pinned) {
@@ -202,12 +203,12 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
         }
       }
     }
-    // Spring attraction along links.
+    // Spring attraction along links — rest length 80px matches larger canvas.
     for (const { a, b } of links) {
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const d = Math.sqrt(dx * dx + dy * dy) || 1;
-      const f = (d - 60) * 0.01;
+      const f = (d - 80) * 0.01;
       const fx = (dx / d) * f;
       const fy = (dy / d) * f;
       if (!a.pinned) {
@@ -253,6 +254,11 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     return null;
   }
 
+  // Precompute per-node connection count for tooltip badges.
+  function connectionCount(n: SimNode): number {
+    return links.filter((l) => l.a === n || l.b === n).length;
+  }
+
   function draw(): void {
     if (!ctx) return;
     const text = colorVar('--color-text');
@@ -266,25 +272,62 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     ctx.translate(view.offsetX, view.offsetY);
     ctx.scale(view.scale, view.scale);
 
-    ctx.strokeStyle = border;
-    ctx.lineWidth = 1 / view.scale;
+    // Edges
     for (const { a, b } of links) {
+      const isConnected = hoveredNode && (a === hoveredNode || b === hoveredNode);
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
+      if (hoveredNode) {
+        ctx.strokeStyle = isConnected ? accent : border;
+        ctx.lineWidth = (isConnected ? 2.2 : 1.0) / view.scale;
+        ctx.globalAlpha = isConnected ? 0.95 : 0.15;
+      } else {
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 1.2 / view.scale;
+        ctx.globalAlpha = 1.0;
+      }
       ctx.stroke();
     }
-    ctx.font = `${11 / view.scale}px system-ui, sans-serif`;
+
+    ctx.font = `${12 / view.scale}px system-ui, sans-serif`;
     ctx.textAlign = 'center';
+
     for (const n of nodes) {
       const isCurrent = n.id === slug;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, isCurrent ? 6 : 4, 0, Math.PI * 2);
-      ctx.fillStyle = isCurrent ? accent : primary;
-      ctx.fill();
+      const isHovered = n === hoveredNode;
+      const isConnected = hoveredNode && (n === hoveredNode || links.some((l) => (l.a === hoveredNode && l.b === n) || (l.b === hoveredNode && l.a === n)));
+      
+      if (hoveredNode) {
+        ctx.globalAlpha = (isHovered || isConnected) ? 1.0 : 0.3;
+      } else {
+        ctx.globalAlpha = 1.0;
+      }
+
+      const r = isCurrent ? 8 : 6;
+
+      // Glow effect on current-page node
+      if (isCurrent) {
+        ctx.save();
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = 10 / view.scale;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = accent;
+        ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = isHovered ? accent : primary;
+        ctx.fill();
+      }
+
       ctx.fillStyle = text;
-      const label = n.title.length > 18 ? `${n.title.slice(0, 17)}…` : n.title;
-      ctx.fillText(label, n.x, n.y - 8 / view.scale);
+      if (!hoveredNode || isHovered || isConnected) {
+        const label = n.title.length > 22 ? `${n.title.slice(0, 21)}…` : n.title;
+        ctx.fillText(label, n.x, n.y - (r + 3) / view.scale);
+      }
     }
     ctx.restore();
   }
@@ -309,10 +352,18 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function showTooltip(n: SimNode, x: number, y: number): void {
-    tooltip.textContent = n.title;
-    tooltip.style.left = `${x + 10}px`;
-    tooltip.style.top = `${y - 10}px`;
+    const count = connectionCount(n);
+    const badge = count > 0
+      ? `<span class="graph-tooltip-badge">${count} link${count !== 1 ? 's' : ''}</span>`
+      : '';
+    tooltip.innerHTML = `<span class="graph-tooltip-title">${escapeHtml(n.title)}</span>${badge}`;
+    tooltip.style.left = `${x + 12}px`;
+    tooltip.style.top = `${y - 14}px`;
     tooltip.hidden = false;
   }
   function hideTooltip(): void {
@@ -366,9 +417,17 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     const g = screenToGraph(pt.x, pt.y);
     const hit = hitTest(g.x, g.y);
     if (hit) {
+      if (hoveredNode !== hit) {
+        hoveredNode = hit;
+        draw();
+      }
       showTooltip(hit, pt.x, pt.y);
       canvas.style.cursor = 'pointer';
     } else {
+      if (hoveredNode !== null) {
+        hoveredNode = null;
+        draw();
+      }
       hideTooltip();
       canvas.style.cursor = 'grab';
     }
@@ -400,6 +459,10 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   });
 
   canvas.addEventListener('pointerleave', () => {
+    if (hoveredNode !== null) {
+      hoveredNode = null;
+      draw();
+    }
     hideTooltip();
     if (!dragNode && !panning) canvas.style.cursor = 'grab';
   });
@@ -418,6 +481,29 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     },
     { passive: false },
   );
+
+  // Zoom control buttons
+  const zoomInBtn = container.querySelector<HTMLButtonElement>('[data-graph-zoom="in"]');
+  const zoomOutBtn = container.querySelector<HTMLButtonElement>('[data-graph-zoom="out"]');
+  const zoomResetBtn = container.querySelector<HTMLButtonElement>('[data-graph-zoom="reset"]');
+
+  const zoomCenter = (factor: number): void => {
+    const before = screenToGraph(cx, cy);
+    view.scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, view.scale * factor));
+    const after = graphToScreen(before.x, before.y);
+    view.offsetX += cx - after.x;
+    view.offsetY += cy - after.y;
+    draw();
+  };
+
+  zoomInBtn?.addEventListener('click', () => zoomCenter(1.2));
+  zoomOutBtn?.addEventListener('click', () => zoomCenter(1 / 1.2));
+  zoomResetBtn?.addEventListener('click', () => {
+    view.scale = 1;
+    view.offsetX = 0;
+    view.offsetY = 0;
+    draw();
+  });
 
   canvas.style.cursor = 'grab';
 

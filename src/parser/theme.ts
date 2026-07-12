@@ -13,7 +13,6 @@ function colorVars(c: ThemeColors): string {
   ].join(';');
 }
 
-/** Build site stylesheet. Theme is decided entirely at build time (config/`redesign`) — the site ships no UI to switch it. */
 export function buildStyles(config: MdgardenConfig, customCss = ''): string {
   const { colors, fonts, darkMode } = config.theme;
   const light = colorVars(colors.light);
@@ -22,17 +21,29 @@ export function buildStyles(config: MdgardenConfig, customCss = ''): string {
 
   let css = '';
   if (darkMode === 'dark') {
-    css += `:root{${dark};${fontVars}}\n`;
+    css += `:root, :root[data-theme="dark"] { ${dark}; ${fontVars} }\n`;
   } else if (darkMode === 'light') {
-    css += `:root{${light};${fontVars}}\n`;
+    css += `:root, :root[data-theme="light"] { ${light}; ${fontVars} }\n`;
   } else {
-    // 'auto': light by default, dark only via the OS preference — there's no
-    // on-site control, so this is the sole source of dark mode.
-    css += `:root{${light};${fontVars}}\n`;
-    css += `@media (prefers-color-scheme:dark){:root{${dark}}}\n`;
+    // Default to light mode
+    css += `:root, :root[data-theme="light"] { ${light}; ${fontVars} }\n`;
+    // Override with dark mode if OS prefers dark, UNLESS user explicitly forces light mode
+    css += `@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) { ${dark} }\n}\n`;
+    // Explicitly force dark mode regardless of OS
+    css += `:root[data-theme="dark"] { ${dark} }\n`;
   }
 
-  css += baseCss;
+  let finalBaseCss = baseCss;
+  if (config.theme.layout?.breakpoints) {
+    const { mobile, tablet, laptop, desktop } = config.theme.layout.breakpoints;
+    finalBaseCss = finalBaseCss
+      .replace(/@bp-mobile/g, mobile)
+      .replace(/@bp-tablet/g, tablet)
+      .replace(/@bp-laptop/g, laptop)
+      .replace(/@bp-desktop/g, desktop);
+  }
+
+  css += finalBaseCss;
   if (customCss.trim()) css += `\n/* custom */\n${customCss}`;
   return css;
 }

@@ -145,6 +145,11 @@ export function renderDocument(opts: DocumentOptions, ctx: RenderContext): strin
     ? `<section class="graph-panel"><h2>${escapeHtml(t('graph', config))}</h2>${graphToggle}` +
       `<div class="graph" data-graph>` +
       `<p class="sr-only">${escapeHtml(t('graphInstructions', config))}</p>` +
+      `<div class="graph-controls">` +
+      `<button type="button" class="graph-control-btn" data-graph-zoom="in" aria-label="Zoom in" title="Zoom in">+</button>` +
+      `<button type="button" class="graph-control-btn" data-graph-zoom="out" aria-label="Zoom out" title="Zoom out">−</button>` +
+      `<button type="button" class="graph-control-btn" data-graph-zoom="reset" aria-label="Reset view" title="Reset view">⛶</button>` +
+      `</div>` +
       `<canvas aria-hidden="true"></canvas>` +
       `<details class="graph-links"><summary>${escapeHtml(t('graphBrowse', config))}</summary><ul></ul></details>` +
       `</div></section>`
@@ -159,6 +164,13 @@ export function renderDocument(opts: DocumentOptions, ctx: RenderContext): strin
   return `<!doctype html>
 <html lang="${escapeAttr(lang)}" data-base="${escapeAttr(getBasePath())}">
 <head>
+<script>
+  (function() {
+    const t = localStorage.getItem('mdgarden-theme');
+    if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+  })();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(fullTitle)}</title>
@@ -219,10 +231,16 @@ function renderSidebarHeader(ctx: RenderContext): string {
       `${searchIcon}<span class="search-trigger-label">${escapeHtml(t('searchPlaceholder', config))}</span></button>`
     : '';
 
+  const themeToggle = `<button class="theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">` +
+    `<svg class="sun-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>` +
+    `<svg class="moon-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>` +
+    `</button>`;
+
   return `<div class="sidebar-header">
 ${renderSidebarLogo(config)}
 <div class="sidebar-header-top">
 <a class="site-title" href="${escapeAttr(withBase('/'))}">${escapeHtml(config.site.title)}</a>
+${themeToggle}
 </div>
 ${nav}
 ${search}
@@ -251,6 +269,9 @@ function renderMobileBar(ctx: RenderContext): string {
   const { config } = ctx;
   const menuLabel = escapeAttr(t('menu', config));
   const closeLabel = escapeAttr(t('close', config));
+  
+
+
   return `<header class="mobile-bar">
 <button class="icon-button" type="button" data-sidebar-toggle aria-controls="site-sidebar" aria-expanded="false" aria-label="${menuLabel}" title="${menuLabel}">☰</button>
 <a class="site-title" href="${escapeAttr(withBase('/'))}">${escapeHtml(config.site.title)}</a>
@@ -293,8 +314,9 @@ function renderTree(nodes: TreeNode[], currentUrl: string): string {
           ? `<a class="folder-label" href="${escapeAttr(n.page.url)}" title="${title}">${escapeHtml(n.name)}</a>`
           : `<span class="folder-label" title="${title}">${escapeHtml(n.name)}</span>`;
         return `<li class="explorer-folder${open ? ' is-open' : ''}">` +
+          `<div class="folder-header">` +
           `<button class="folder-toggle" type="button" aria-expanded="${open}" aria-label="Toggle ${title} folder">${folderChevron}</button>` +
-          `${label}<ul class="explorer-children">${renderTree(n.children, currentUrl)}</ul></li>`;
+          `${label}</div><ul class="explorer-children">${renderTree(n.children, currentUrl)}</ul></li>`;
       }
       const active = Boolean(n.page && n.page.url === currentUrl);
       const attrs = active ? ' class="is-active" aria-current="page"' : '';

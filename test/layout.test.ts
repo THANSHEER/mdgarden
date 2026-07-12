@@ -42,6 +42,14 @@ describe('layout: right rail (backlinks + graph toggle)', () => {
     expect(html).not.toContain('data-graph-mode');
     expect(html).toContain('data-graph');
   });
+
+  it('renders a theme toggle button in the sidebar and FOUC script in head', async () => {
+    const html = await read(out, 'index.html');
+    expect(html).toContain('class="theme-toggle-btn"');
+    expect(html).toContain('class="sun-icon"');
+    expect(html).toContain('class="moon-icon"');
+    expect(html).toContain('localStorage.getItem(\'mdgarden-theme\')');
+  });
 });
 
 describe('layout: sidebar logo', () => {

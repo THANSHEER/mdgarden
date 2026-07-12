@@ -158,6 +158,7 @@ function composeConfig(answers: {
       darkMode: answers.darkMode,
       colors: preset.colors,
       fonts: preset.fonts,
+      layout: preset.layout,
     },
     nav: [{ title: 'Home', url: '/' }],
     features,
@@ -225,6 +226,7 @@ export async function redesignSite(dir: string, opts: RedesignOptions = {}): Pro
       darkMode,
       colors: preset.colors,
       fonts: preset.fonts,
+      layout: preset.layout,
     },
   };
 

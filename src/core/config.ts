@@ -2,6 +2,12 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { MdgardenConfig, ThemeColors } from '../types.js';
 
+import defaultTheme from '../../themes/default/theme.json' with { type: 'json' };
+import forestTheme from '../../themes/forest/theme.json' with { type: 'json' };
+import roseTheme from '../../themes/rose/theme.json' with { type: 'json' };
+import nordTheme from '../../themes/nord/theme.json' with { type: 'json' };
+import inkTheme from '../../themes/ink/theme.json' with { type: 'json' };
+
 // ---------------------------------------------------------------------------
 // Theme presets
 // ---------------------------------------------------------------------------
@@ -13,93 +19,22 @@ export interface ThemePreset {
   hint: string;
   colors: { light: ThemeColors; dark: ThemeColors };
   fonts: { heading: string; body: string; code: string };
+  layout: {
+    breakpoints: {
+      mobile: string;
+      tablet: string;
+      laptop: string;
+      desktop: string;
+    };
+  };
 }
 
-const SANS = 'Inter, system-ui, -apple-system, sans-serif';
-const SERIF = 'Georgia, Cambria, "Times New Roman", serif';
-const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
-
 export const THEME_PRESETS: ThemePreset[] = [
-  {
-    id: 'default',
-    label: 'Default',
-    hint: 'Clean steel-blue, neutral background',
-    fonts: { heading: SANS, body: SANS, code: MONO },
-    colors: {
-      light: {
-        background: '#faf8f8', text: '#2b2b2b', primary: '#284b63',
-        accent: '#84a59d', muted: '#6b6b6b', border: '#e5e5e5', surface: '#ffffff',
-      },
-      dark: {
-        background: '#161618', text: '#ebebec', primary: '#7b97aa',
-        accent: '#84a59d', muted: '#a0a0a0', border: '#33333a', surface: '#1e1e22',
-      },
-    },
-  },
-  {
-    id: 'forest',
-    label: 'Forest',
-    hint: 'Calm greens, garden feel',
-    fonts: { heading: SANS, body: SANS, code: MONO },
-    colors: {
-      light: {
-        background: '#f6f8f4', text: '#26302a', primary: '#2f6f4f',
-        accent: '#7fae6f', muted: '#5f6b5f', border: '#dde6da', surface: '#ffffff',
-      },
-      dark: {
-        background: '#141a16', text: '#e6ede6', primary: '#82c79a',
-        accent: '#9fd08a', muted: '#9aa79a', border: '#2a352d', surface: '#1b231d',
-      },
-    },
-  },
-  {
-    id: 'rose',
-    label: 'Rosé',
-    hint: 'Warm rose + plum, soft contrast',
-    fonts: { heading: SANS, body: SANS, code: MONO },
-    colors: {
-      light: {
-        background: '#fbf6f6', text: '#3a2b32', primary: '#a14a6b',
-        accent: '#d98ca6', muted: '#7a6068', border: '#ecdde1', surface: '#ffffff',
-      },
-      dark: {
-        background: '#1b1417', text: '#f0e3e8', primary: '#d98ca6',
-        accent: '#e0a7bd', muted: '#a98e98', border: '#352830', surface: '#231a1e',
-      },
-    },
-  },
-  {
-    id: 'nord',
-    label: 'Nord',
-    hint: 'Cool nordic blue-grey',
-    fonts: { heading: SANS, body: SANS, code: MONO },
-    colors: {
-      light: {
-        background: '#f4f6f9', text: '#2e3440', primary: '#5e81ac',
-        accent: '#88c0d0', muted: '#5b6675', border: '#dce1e8', surface: '#ffffff',
-      },
-      dark: {
-        background: '#2e3440', text: '#eceff4', primary: '#88c0d0',
-        accent: '#8fbcbb', muted: '#a9b1c0', border: '#3b4252', surface: '#3b4252',
-      },
-    },
-  },
-  {
-    id: 'ink',
-    label: 'Ink',
-    hint: 'Minimal monochrome, serif body',
-    fonts: { heading: SANS, body: SERIF, code: MONO },
-    colors: {
-      light: {
-        background: '#ffffff', text: '#1a1a1a', primary: '#111111',
-        accent: '#555555', muted: '#707070', border: '#e6e6e6', surface: '#fafafa',
-      },
-      dark: {
-        background: '#0e0e0e', text: '#ededed', primary: '#fafafa',
-        accent: '#b8b8b8', muted: '#8a8a8a', border: '#2a2a2a', surface: '#171717',
-      },
-    },
-  },
+  defaultTheme as ThemePreset,
+  forestTheme as ThemePreset,
+  roseTheme as ThemePreset,
+  nordTheme as ThemePreset,
+  inkTheme as ThemePreset,
 ];
 
 /** Find theme preset by ID. */
@@ -123,31 +58,9 @@ export const DEFAULT_CONFIG: MdgardenConfig = {
   theme: {
     name: 'default',
     darkMode: 'auto',
-    colors: {
-      light: {
-        background: '#faf8f8',
-        text: '#2b2b2b',
-        primary: '#284b63',
-        accent: '#84a59d',
-        muted: '#6b6b6b',
-        border: '#e5e5e5',
-        surface: '#ffffff',
-      },
-      dark: {
-        background: '#161618',
-        text: '#ebebec',
-        primary: '#7b97aa',
-        accent: '#84a59d',
-        muted: '#a0a0a0',
-        border: '#33333a',
-        surface: '#1e1e22',
-      },
-    },
-    fonts: {
-      heading: SANS,
-      body: SANS,
-      code: MONO,
-    },
+    colors: defaultTheme.colors,
+    fonts: defaultTheme.fonts,
+    layout: defaultTheme.layout,
   },
   nav: [],
   features: {
@@ -194,9 +107,34 @@ function deepMerge<T>(base: T, override: unknown): T {
   return out as T;
 }
 
+/**
+ * Derive build.basePath from site.baseUrl when basePath is not explicitly set.
+ * Works for any hosting provider that serves the site at a URL sub-path
+ * (GitHub Pages project sites, Cloudflare, Vercel, Render, AWS, Azure, etc.).
+ *
+ * Examples:
+ *   "https://owner.github.io/my-repo"  → "/my-repo"
+ *   "https://mysite.vercel.app/docs"   → "/docs"
+ *   "https://example.com"              → ""  (root — no prefix needed)
+ */
+function derivedBasePath(config: MdgardenConfig): string {
+  // Explicit basePath always wins (including empty string to force root).
+  if (config.build.basePath) return config.build.basePath;
+  const url = config.site.baseUrl;
+  if (!url) return '';
+  try {
+    const pathname = new URL(url).pathname.replace(/\/+$/, '');
+    return pathname === '' ? '' : pathname;
+  } catch {
+    return ''; // malformed baseUrl — fall back to root
+  }
+}
+
 /** Resolve configuration. */
 export function resolveConfig(input: unknown): MdgardenConfig {
-  return deepMerge(DEFAULT_CONFIG, input);
+  const config = deepMerge(DEFAULT_CONFIG, input);
+  config.build.basePath = derivedBasePath(config);
+  return config;
 }
 
 // ---------------------------------------------------------------------------

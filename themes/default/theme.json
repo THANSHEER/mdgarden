@@ -1,0 +1,38 @@
+{
+  "id": "default",
+  "label": "Default",
+  "hint": "Clean steel-blue, neutral background",
+  "fonts": {
+    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "body": "Inter, system-ui, -apple-system, sans-serif",
+    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+  },
+  "colors": {
+    "light": {
+      "background": "#faf8f8",
+      "text": "#2b2b2b",
+      "primary": "#284b63",
+      "accent": "#84a59d",
+      "muted": "#6b6b6b",
+      "border": "#e5e5e5",
+      "surface": "#ffffff"
+    },
+    "dark": {
+      "background": "#161618",
+      "text": "#ebebec",
+      "primary": "#7b97aa",
+      "accent": "#84a59d",
+      "muted": "#a0a0a0",
+      "border": "#33333a",
+      "surface": "#1e1e22"
+    }
+  },
+  "layout": {
+    "breakpoints": {
+      "mobile": "36rem",
+      "tablet": "56rem",
+      "laptop": "80rem",
+      "desktop": "100rem"
+    }
+  }
+}

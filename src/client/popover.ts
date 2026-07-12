@@ -5,6 +5,7 @@ let hoverTimer: number | null = null;
 let activeLink: HTMLAnchorElement | null = null;
 
 interface PreviewCard {
+  title: string;
   summary: string;
   href: string;
 }
@@ -22,6 +23,9 @@ function shouldPreviewLink(link: HTMLAnchorElement): boolean {
   if (!href || href.startsWith('#')) return false;
   if (link.classList.contains('wikilink-broken')) return false;
   if (link.target === '_blank' || link.hasAttribute('download')) return false;
+  
+  // Disable popovers for links inside any sidebar
+  if (link.closest('.sidebar-left') || link.closest('.sidebar-right') || link.closest('.sidebar')) return false;
 
   const url = getBaseUrl(href);
   if (!url || url.origin !== window.location.origin) return false;
@@ -31,28 +35,76 @@ function shouldPreviewLink(link: HTMLAnchorElement): boolean {
 
 function trimSummary(text: string): string {
   const compact = text.replace(/\s+/g, ' ').trim();
-  if (compact.length <= 180) return compact;
-  return `${compact.slice(0, 177).trimEnd()}...`;
+  if (compact.length <= 200) return compact;
+  return `${compact.slice(0, 197).trimEnd()}…`;
+}
+
+/** Extract a clean page title from the fetched document.
+ *  Strips the " — Site Name" suffix that mdgarden appends. */
+function extractTitle(doc: Document): string {
+  // Prefer an explicit <h1> in the article
+  const h1 = doc.querySelector('.md-content .page-title, .md-content h1, h1');
+  if (h1?.textContent?.trim()) return h1.textContent.trim();
+  // Fall back to <title>, removing " — Anything" suffix
+  const raw = doc.title?.trim() ?? '';
+  return raw.replace(/\s[—–-]\s.+$/, '').trim() || raw;
 }
 
 function buildPreviewCard(doc: Document, href: string): PreviewCard {
-  const summaryFromMeta = doc.querySelector('meta[name="description"]')?.getAttribute('content')?.trim();
-  if (summaryFromMeta) {
-    return { summary: summaryFromMeta, href };
+  const title = extractTitle(doc);
+
+  // Extract actual page content (skipping titles, meta, breadcrumbs)
+  const contentEl = doc.querySelector('.md-content');
+  let actualContent = '';
+  
+  if (contentEl) {
+    const elements = Array.from(contentEl.children).filter(el => 
+      !el.matches('h1, h2, h3, h4, h5, h6, .page-title, .page-meta, .breadcrumbs, hr')
+    );
+    for (const el of elements) {
+      if (actualContent.length > 250) break;
+      const text = el.textContent?.trim();
+      if (text) actualContent += text + ' ';
+    }
   }
 
-  const firstParagraph = doc.querySelector('.md-content p')?.textContent?.trim();
-  return { summary: firstParagraph ? trimSummary(firstParagraph) : 'No preview available.', href };
+  const summary = actualContent ? trimSummary(actualContent) : 'No preview available.';
+  return { title, summary, href };
+}
+
+/** Format the URL for display: strip protocol, keep path, truncate if long. */
+function formatDisplayHref(href: string): string {
+  try {
+    const u = new URL(href, window.location.href);
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    if (path.length > 52) return `${path.slice(0, 49)}…`;
+    return path;
+  } catch {
+    return href;
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderPreviewCard(card: PreviewCard): string {
+  const displayHref = formatDisplayHref(card.href);
+  const titleHtml = card.title
+    ? `<div class="md-popover-title">${escapeHtml(card.title)}</div>`
+    : '';
+  const summaryHtml = card.summary
+    ? `<p class="md-popover-summary">${escapeHtml(card.summary)}</p>`
+    : '';
   return [
     '<div class="md-popover-inner">',
-    `<p class="md-popover-summary">${card.summary}</p>`,
-    `<p class="md-popover-footer"><span>${card.href}</span></p>`,
+    titleHtml,
+    summaryHtml,
+    `<p class="md-popover-footer"><code class="md-popover-url">${escapeHtml(displayHref)}</code><span class="md-popover-cta">Open →</span></p>`,
     '</div>',
   ].join('');
 }
+
 
 async function fetchPreview(href: string): Promise<string> {
   const cached = CACHE.get(href);
@@ -71,24 +123,31 @@ async function fetchPreview(href: string): Promise<string> {
 function positionPopover(popover: HTMLElement, link: HTMLAnchorElement): void {
   const rect = link.getBoundingClientRect();
   const margin = 16;
-  const width = Math.min(440, window.innerWidth - margin * 2);
-  const height = Math.min(280, window.innerHeight - margin * 2);
+  
+  // Set constraints first so it can measure its natural size
+  popover.style.width = '420px';
+  popover.style.maxWidth = `calc(100vw - ${margin * 2}px)`;
+  
+  const width = popover.offsetWidth;
+  const height = popover.offsetHeight;
 
-  popover.style.width = `${width}px`;
-  popover.style.maxHeight = `${height}px`;
-
-  let left = rect.left;
+  // Center horizontally relative to the link
+  let left = rect.left + (rect.width / 2) - (width / 2);
   if (left + width > window.innerWidth - margin) {
     left = window.innerWidth - width - margin;
   }
+  if (left < margin) {
+    left = margin;
+  }
 
+  // Position vertically: prefer below, flip above if no room
   let top = rect.bottom + 12;
   if (top + height > window.innerHeight - margin && rect.top > height + 12) {
     top = rect.top - height - 12;
   }
 
-  popover.style.left = `${Math.max(margin, left)}px`;
-  popover.style.top = `${Math.max(margin, top)}px`;
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
 }
 
 export function initPopovers(): void {
