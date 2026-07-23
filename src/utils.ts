@@ -44,6 +44,7 @@ export const UI = {
   notes: 'Notes',
   onThisPage: 'On this page',
   linkedReferences: 'Linked references',
+  recentNotes: 'Recent notes',
   graph: 'Graph',
   graphLocal: 'Local',
   graphGlobal: 'All notes',

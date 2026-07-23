@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { MdgardenConfig, ThemeColors } from '../types.js';
+import type { MdgardenConfig, ThemeColors, ThemeLayout } from '../types.js';
 
 import defaultTheme from '../../themes/default/theme.json' with { type: 'json' };
 import forestTheme from '../../themes/forest/theme.json' with { type: 'json' };
@@ -13,20 +13,13 @@ import inkTheme from '../../themes/ink/theme.json' with { type: 'json' };
 // ---------------------------------------------------------------------------
 
 /** Theme preset options (used by the setup wizard). */
-export interface ThemePreset {
+interface ThemePreset {
   id: string;
   label: string;
   hint: string;
   colors: { light: ThemeColors; dark: ThemeColors };
   fonts: { heading: string; body: string; code: string };
-  layout: {
-    breakpoints: {
-      mobile: string;
-      tablet: string;
-      laptop: string;
-      desktop: string;
-    };
-  };
+  layout: ThemeLayout;
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -76,6 +69,7 @@ export const DEFAULT_CONFIG: MdgardenConfig = {
     mermaid: true,
     explorer: true,
     breadcrumbs: true,
+    recentNotes: true,
     comments: false,
   },
   build: {

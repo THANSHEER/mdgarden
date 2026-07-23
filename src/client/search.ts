@@ -28,13 +28,13 @@ interface Doc {
 
 /** Client search module. */
 export function initSearch(): void {
-  const button = document.querySelector<HTMLButtonElement>('[data-search-open]');
-  if (!button) return;
-  const trigger = button;
-  const searchPlaceholder = trigger.dataset.placeholder || 'Search notes…';
-  const searchLabel = trigger.getAttribute('aria-label') || 'Search';
-  const closeLabel = trigger.dataset.closeLabel || 'Close';
-  const resultsLabel = trigger.dataset.resultsLabel || 'Search results';
+  const el = document.querySelector<HTMLButtonElement>('[data-search-open]');
+  if (!el) return;
+  const button = el;
+  const searchPlaceholder = button.dataset.placeholder || 'Search notes…';
+  const searchLabel = button.getAttribute('aria-label') || 'Search';
+  const closeLabel = button.dataset.closeLabel || 'Close';
+  const resultsLabel = button.dataset.resultsLabel || 'Search results';
 
   let mini: MiniSearch<Doc> | null = null;
   let loading = false;
@@ -90,8 +90,8 @@ export function initSearch(): void {
     });
     modal.querySelector<HTMLButtonElement>('.search-close')?.addEventListener('click', close);
     modal.addEventListener('close', () => {
-      trigger.setAttribute('aria-expanded', 'false');
-      trigger.focus();
+      button.setAttribute('aria-expanded', 'false');
+      button.focus();
     });
     input?.addEventListener('input', () => runQuery(input?.value ?? ''));
     input?.addEventListener('keydown', (e) => {
@@ -116,7 +116,7 @@ export function initSearch(): void {
   async function open(): Promise<void> {
     ensureModal();
     if (!modal?.open) modal?.showModal();
-    trigger.setAttribute('aria-expanded', 'true');
+    button.setAttribute('aria-expanded', 'true');
     input?.focus();
     await ensureIndex();
     runQuery(input?.value ?? '');
@@ -144,7 +144,7 @@ export function initSearch(): void {
       .join('');
   }
 
-  trigger.addEventListener('click', () => {
+  button.addEventListener('click', () => {
     void open();
   });
 
@@ -179,8 +179,6 @@ function escapeRegExp(s: string): string {
 function highlightText(text: string, query: string): string {
   if (!query.trim()) return escapeHtml(text);
   const terms = query.split(/\s+/).filter((t) => t.length > 0).map(escapeRegExp);
-  if (terms.length === 0) return escapeHtml(text);
-  
   const regex = new RegExp(`(${terms.join('|')})`, 'gi');
   let match;
   const ranges: { start: number; end: number }[] = [];

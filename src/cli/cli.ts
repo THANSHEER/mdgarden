@@ -5,7 +5,7 @@ import { build } from '../core/build.js';
 import { serve } from './serve.js';
 import { initSite, canPrompt, configExists, redesignSite, runConfigWizard } from './wizard.js';
 import { publish } from './publish.js';
-import { buildUpdatePlan, runUpdatePlan } from './update.js';
+import { buildUpdatePlan, checkForUpdate, runUpdatePlan } from './update.js';
 import { VERSION } from '../index.js';
 import { getConfigValue, loadConfig, parseConfigValue, setConfigValue, unsetConfigValue } from '../core/config.js';
 
@@ -140,9 +140,22 @@ cli
 cli
   .command('update', 'Update mdgarden to the latest available version')
   .option('-b, --background', 'Run the update in the background and return immediately')
-  .action(async (options: { background?: boolean }) => {
+  .option('-f, --force', 'Reinstall even when already on the latest version')
+  .action(async (options: { background?: boolean; force?: boolean }) => {
     try {
-      const plan = await buildUpdatePlan();
+      console.log(`Checking for updates (current v${VERSION})...`);
+      const check = await checkForUpdate();
+      if (!check.updateAvailable && !options.force) {
+        console.log(`✓ Already up to date (v${check.latest})`);
+        return;
+      }
+      if (!check.updateAvailable && options.force) {
+        console.log(`Already on v${check.latest} — reinstalling (--force)...`);
+      } else {
+        console.log(`Update available: v${check.current} → v${check.latest}`);
+      }
+
+      const plan = buildUpdatePlan(process.execPath, process.platform, check.latestTag);
       if (options.background) plan.detached = true;
       console.log(`Updating via ${plan.source}...`);
       console.log(plan.note);
@@ -219,25 +232,6 @@ cli
       }
     },
   );
-
-cli
-  .command('update', 'Update mdgarden to the latest available version')
-  .action(async () => {
-    try {
-      const plan = buildUpdatePlan();
-      console.log(`Updating via ${plan.source}...`);
-      console.log(plan.note);
-      await runUpdatePlan(plan);
-      if (!plan.detached) {
-        console.log('✓ Update complete');
-      } else {
-        console.log('✓ Update scheduled');
-      }
-    } catch (err) {
-      console.error(`✗ Update failed: ${(err as Error).message}`);
-      process.exitCode = 1;
-    }
-  });
 
 cli
   .command('publish [contentDir]', 'Build and deploy to GitHub Pages or Cloudflare Pages')

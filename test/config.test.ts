@@ -12,7 +12,13 @@ import { UI, t } from '../src/utils.js';
 describe('config defaults', () => {
   it('keeps new feature flags on (comments off) and base defaults', () => {
     const f = DEFAULT_CONFIG.features;
-    expect([f.readingTime, f.mermaid, f.explorer, f.breadcrumbs]).toEqual([true, true, true, true]);
+    expect([f.readingTime, f.mermaid, f.explorer, f.breadcrumbs, f.recentNotes]).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
     expect(f.comments).toBe(false);
     expect(DEFAULT_CONFIG.build.basePath).toBe('');
     expect(DEFAULT_CONFIG.build.folderIndex).toBe(true);

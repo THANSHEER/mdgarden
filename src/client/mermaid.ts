@@ -20,8 +20,8 @@ async function renderAll(): Promise<void> {
   }
   try {
     await mermaid.run({ nodes });
-  } catch {
-
+  } catch (err) {
+    console.warn('[mdgarden] mermaid render failed:', err);
   }
 }
 

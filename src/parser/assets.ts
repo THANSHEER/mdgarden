@@ -31,11 +31,11 @@ export function inSea(): boolean {
 }
 
 
-export const SEA_CLIENT_KEY = 'mdgarden.client.js';
-export const SEA_MERMAID_KEY = 'mdgarden.mermaid.js';
-export const SEA_KATEX_CSS_KEY = 'katex.min.css';
-export const SEA_KATEX_FONTS_MANIFEST_KEY = 'katex/fonts.json';
-export const seaKatexFontKey = (name: string): string => `katex/fonts/${name}`;
+const SEA_CLIENT_KEY = 'mdgarden.client.js';
+const SEA_MERMAID_KEY = 'mdgarden.mermaid.js';
+const SEA_KATEX_CSS_KEY = 'katex.min.css';
+const SEA_KATEX_FONTS_MANIFEST_KEY = 'katex/fonts.json';
+const seaKatexFontKey = (name: string): string => `katex/fonts/${name}`;
 
 /** Get candidate paths for client chunk on disk. */
 function clientChunkDiskPaths(name: string): string[] {

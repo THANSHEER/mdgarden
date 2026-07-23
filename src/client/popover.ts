@@ -105,7 +105,6 @@ function renderPreviewCard(card: PreviewCard): string {
   ].join('');
 }
 
-
 async function fetchPreview(href: string): Promise<string> {
   const cached = CACHE.get(href);
   if (cached) return cached;

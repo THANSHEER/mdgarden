@@ -69,8 +69,8 @@ export interface DocumentOptions {
   frontmatter?: Record<string, unknown>;
 }
 
-/** Render markdown page body. */
-export function renderBody(md: MarkdownIt, page: Page, index: SiteIndex): void {
+/** Render markdown page body. Returns the list of unresolved wikilink targets, if any. */
+export function renderBody(md: MarkdownIt, page: Page, index: SiteIndex): string[] {
   const env = makeRenderEnv(index);
   page.html = md.render(page.body, env);
   page.headings = env.headings;
@@ -79,6 +79,7 @@ export function renderBody(md: MarkdownIt, page: Page, index: SiteIndex): void {
   if (!page.description) {
     page.description = stripHtml(page.html).slice(0, 180).trim();
   }
+  return [...env.broken];
 }
 
 /** Apply idempotent document-level fixes to freshly rendered or cached HTML. */
@@ -155,7 +156,10 @@ export function renderDocument(opts: DocumentOptions, ctx: RenderContext): strin
       `</div></section>`
     : '';
   const backlinksHtml = renderBacklinks(opts.backlinks ?? [], config);
-  const rightInner = `${tocSection}${graphPanel}${backlinksHtml}`;
+  const recentNotesHtml = config.features.recentNotes
+    ? renderRecentNotes(ctx.pages, opts.url, config)
+    : '';
+  const rightInner = `${tocSection}${graphPanel}${backlinksHtml}${recentNotesHtml}`;
   const rightSidebar = rightInner
     ? `<aside class="sidebar sidebar-right" aria-label="${escapeAttr(t('supplementary', config))}">${rightInner}</aside>`
     : '';
@@ -269,8 +273,6 @@ function renderMobileBar(ctx: RenderContext): string {
   const { config } = ctx;
   const menuLabel = escapeAttr(t('menu', config));
   const closeLabel = escapeAttr(t('close', config));
-  
-
 
   return `<header class="mobile-bar">
 <button class="icon-button" type="button" data-sidebar-toggle aria-controls="site-sidebar" aria-expanded="false" aria-label="${menuLabel}" title="${menuLabel}">☰</button>
@@ -384,6 +386,33 @@ function renderBacklinks(backlinks: Page[], config: MdgardenConfig): string {
     )
     .join('');
   return `<section class="backlinks"><h2>${escapeHtml(t('linkedReferences', config))}</h2><ul class="backlink-list">${items}</ul></section>`;
+}
+
+const RECENT_NOTES_LIMIT = 5;
+
+function byDateThenTitle(a: Page, b: Page): number {
+  if (a.date && b.date) return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+  if (a.date) return -1;
+  if (b.date) return 1;
+  return a.title.localeCompare(b.title);
+}
+
+/** Newest published notes for the right rail (excludes the current page). */
+function renderRecentNotes(pages: Page[], currentUrl: string, config: MdgardenConfig): string {
+  const recent = [...pages]
+    .filter((p) => p.url !== currentUrl)
+    .sort(byDateThenTitle)
+    .slice(0, RECENT_NOTES_LIMIT);
+  if (recent.length === 0) return '';
+  const items = recent
+    .map((p) => {
+      const date = p.date
+        ? ` <span class="page-meta">${escapeHtml(formatDate(p.date, config))}</span>`
+        : '';
+      return `<li class="recent-notes-item"><a href="${escapeAttr(p.url)}">${escapeHtml(p.title)}</a>${date}</li>`;
+    })
+    .join('');
+  return `<section class="recent-notes"><h2>${escapeHtml(t('recentNotes', config))}</h2><ul class="recent-notes-list">${items}</ul></section>`;
 }
 
 function formatDate(value: string, config: MdgardenConfig): string {

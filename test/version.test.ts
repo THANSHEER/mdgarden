@@ -92,7 +92,7 @@ describe('build: major-version-jump warning', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await build({ cwd: fixtures, contentDir: '.', outDir: out });
 
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('major'));
     warn.mockRestore();
   });
 
@@ -100,7 +100,7 @@ describe('build: major-version-jump warning', () => {
     const { build } = await import('../src/core/build.js');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await build({ cwd: fixtures, contentDir: '.', outDir: out });
-    expect(warn).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('major'));
     warn.mockRestore();
   });
 });

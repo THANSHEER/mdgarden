@@ -48,7 +48,7 @@ public/
 mdgarden.config.json
 `;
 
-export const CONFIG_FILENAME = 'mdgarden.config.json';
+const CONFIG_FILENAME = 'mdgarden.config.json';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -83,6 +83,7 @@ const FEATURE_OPTIONS: { value: keyof FeatureFlags; label: string; hint: string 
   { value: 'backlinks', label: 'Backlinks', hint: 'show what links reference each note' },
   { value: 'tags', label: 'Tags', hint: 'create tag index and per-tag pages' },
   { value: 'breadcrumbs', label: 'Breadcrumbs', hint: 'show navigation path at top' },
+  { value: 'recentNotes', label: 'Recent Notes', hint: 'show newest notes in the right sidebar' },
   { value: 'math', label: 'Math (KaTeX)', hint: 'render $…$ LaTeX formulae' },
   { value: 'syntaxHighlight', label: 'Syntax Highlighting', hint: 'beautiful code block syntax coloring' },
   { value: 'mermaid', label: 'Diagrams (Mermaid)', hint: 'render flowcharts, graphs, timelines' },
@@ -102,7 +103,7 @@ function cancelled<T>(value: T | symbol): value is symbol {
 }
 
 /** Prompt for a theme preset + dark mode behaviour. Shared by init and redesign. */
-export async function promptThemeSelection(
+async function promptThemeSelection(
   defaultId = 'default',
 ): Promise<{ themeId: string; darkMode: DarkModeMode }> {
   const themeId = await p.select({
