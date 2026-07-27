@@ -2,7 +2,15 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { collectContent, loadIgnorePatterns } from '../parser/content.js';
-import { buildSiteIndex, outPathForSlug, setBasePath, slugifyPath, tagSlug, withBase } from '../parser/links.js';
+import {
+  buildSiteIndex,
+  outPathForSlug,
+  setBasePath,
+  slugifyPath,
+  tagSlug,
+  withBase,
+  type SiteIndex,
+} from '../parser/links.js';
 import { buildTree, listFolders } from '../features/explorer.js';
 import { escapeAttr, escapeHtml } from '../utils.js';
 import { createMarkdown } from '../parser/markdown.js';
@@ -79,9 +87,10 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
   const md = createMarkdown(config, { highlight, plugins });
 
   const configSig = configSignature(config);
-  const cache = await readBuildCache(cwd, configSig);
+  const indexSig = indexSignature(index);
+  const cache = await readBuildCache(cwd, configSig, indexSig);
   const { cachedCount, brokenByPage } = renderPages(md, pages, index, cache);
-  await writeBuildCache(cwd, pages, configSig, brokenByPage);
+  await writeBuildCache(cwd, pages, configSig, indexSig, brokenByPage);
   if (cachedCount > 0) {
     console.log(`\x1b[36m[cache]\x1b[0m Skipped markdown parsing for ${cachedCount} unchanged file(s)`);
   }
@@ -319,14 +328,24 @@ function computeBacklinks(pages: Page[], index: ReturnType<typeof buildSiteIndex
 // Incremental render cache (skip re-parsing markdown for unchanged files)
 // ---------------------------------------------------------------------------
 
-/** Stable fingerprint of config properties that affect rendered HTML. If this changes,
- *  all cached pages are invalidated automatically on the next build. */
+/** Fingerprint of config fields that affect body HTML (features, basePath, landing, ui).
+ *  Does not cover programmatic plugins — those bypass this cache path when HTML changes. */
 function configSignature(config: MdgardenConfig): string {
   return JSON.stringify({
     features: config.features,
     basePath: config.build.basePath,
     landingPage: config.build.landingPage,
     ui: config.ui ?? null,
+  });
+}
+
+/** Fingerprint of the resolvable page/asset name space. Adding, renaming, or deleting a
+ *  note or asset invalidates every cached body so wikilink resolutions stay correct. */
+function indexSignature(index: SiteIndex): string {
+  return JSON.stringify({
+    pages: [...index.pages.keys()].sort(),
+    paths: [...index.pagesByPath.keys()].sort(),
+    assets: [...index.assetsByPath.keys()].sort(),
   });
 }
 
@@ -341,6 +360,7 @@ interface CachedPage {
 
 interface CacheFile {
   configSig: string;
+  indexSig: string;
   pages: Record<string, CachedPage>;
 }
 
@@ -349,23 +369,31 @@ type BuildCache = Record<string, CachedPage>;
 const CACHE_FILENAME = '.mdgarden-cache.json';
 
 function isCachedPage(v: unknown): v is CachedPage {
-  return (
-    typeof v === 'object' && v !== null &&
-    typeof (v as CachedPage).mtimeMs === 'number' &&
-    typeof (v as CachedPage).html === 'string'
-  );
+  if (typeof v !== 'object' || v === null) return false;
+  const page = v as CachedPage;
+  if (typeof page.mtimeMs !== 'number' || typeof page.html !== 'string') return false;
+  // Older caches omit `broken`; treat as empty. Reject non-array values.
+  if (page.broken === undefined) {
+    (page as CachedPage).broken = [];
+    return true;
+  }
+  return Array.isArray(page.broken) && page.broken.every((t) => typeof t === 'string');
 }
 
 /** Read the previous build's cache. Returns empty if absent, corrupt, or if
- *  the config changed since the last build (full rebuild on feature-flag changes). */
-async function readBuildCache(cwd: string, configSig: string): Promise<BuildCache> {
+ *  config or the site index changed since the last build. */
+async function readBuildCache(
+  cwd: string,
+  configSig: string,
+  indexSig: string,
+): Promise<BuildCache> {
   try {
     const raw = await fs.readFile(path.join(cwd, CACHE_FILENAME), 'utf8');
     const file = JSON.parse(raw) as unknown;
     if (typeof file !== 'object' || file === null) return {};
-    // Config changed → all cached pages are stale.
-    if ((file as { configSig?: unknown }).configSig !== configSig) return {};
-    const pagesRaw = (file as { pages?: unknown }).pages;
+    const cached = file as { configSig?: unknown; indexSig?: unknown; pages?: unknown };
+    if (cached.configSig !== configSig || cached.indexSig !== indexSig) return {};
+    const pagesRaw = cached.pages;
     if (typeof pagesRaw !== 'object' || pagesRaw === null) return {};
     const cache: BuildCache = {};
     for (const [key, value] of Object.entries(pagesRaw as Record<string, unknown>)) {
@@ -382,7 +410,7 @@ async function readBuildCache(cwd: string, configSig: string): Promise<BuildCach
 function renderPages(
   md: ReturnType<typeof createMarkdown>,
   pages: Page[],
-  index: ReturnType<typeof buildSiteIndex>,
+  index: SiteIndex,
   cache: BuildCache,
 ): { cachedCount: number; brokenByPage: Map<string, string[]> } {
   let cachedCount = 0;
@@ -394,13 +422,13 @@ function renderPages(
       page.links = cached.links;
       page.headings = cached.headings;
       page.description = cached.description;
-      if ((cached.broken ?? []).length > 0) brokenByPage.set(page.sourcePath, cached.broken);
+      prepareBodyHtml(page);
+      if (cached.broken.length > 0) brokenByPage.set(page.sourcePath, cached.broken);
       cachedCount++;
     } else {
       const broken = renderBody(md, page, index);
       if (broken.length > 0) brokenByPage.set(page.sourcePath, broken);
     }
-    prepareBodyHtml(page);
   }
   return { cachedCount, brokenByPage };
 }
@@ -410,6 +438,7 @@ async function writeBuildCache(
   cwd: string,
   pages: Page[],
   configSig: string,
+  indexSig: string,
   brokenByPage: Map<string, string[]>,
 ): Promise<void> {
   const pagesData: BuildCache = {};
@@ -425,7 +454,7 @@ async function writeBuildCache(
       };
     }
   }
-  const file: CacheFile = { configSig, pages: pagesData };
+  const file: CacheFile = { configSig, indexSig, pages: pagesData };
   try {
     await fs.writeFile(path.join(cwd, CACHE_FILENAME), JSON.stringify(file));
   } catch (err) {

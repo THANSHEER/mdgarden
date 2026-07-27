@@ -391,7 +391,15 @@ function renderBacklinks(backlinks: Page[], config: MdgardenConfig): string {
 const RECENT_NOTES_LIMIT = 5;
 
 function byDateThenTitle(a: Page, b: Page): number {
-  if (a.date && b.date) return a.date < b.date ? 1 : a.date > b.date ? -1 : 0;
+  if (a.date && b.date) {
+    const aTime = Date.parse(a.date);
+    const bTime = Date.parse(b.date);
+    if (!Number.isNaN(aTime) && !Number.isNaN(bTime) && aTime !== bTime) {
+      return bTime - aTime;
+    }
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return a.title.localeCompare(b.title);
+  }
   if (a.date) return -1;
   if (b.date) return 1;
   return a.title.localeCompare(b.title);
@@ -407,7 +415,7 @@ function renderRecentNotes(pages: Page[], currentUrl: string, config: MdgardenCo
   const items = recent
     .map((p) => {
       const date = p.date
-        ? ` <span class="page-meta">${escapeHtml(formatDate(p.date, config))}</span>`
+        ? ` <span class="recent-notes-date">${escapeHtml(formatDate(p.date, config))}</span>`
         : '';
       return `<li class="recent-notes-item"><a href="${escapeAttr(p.url)}">${escapeHtml(p.title)}</a>${date}</li>`;
     })

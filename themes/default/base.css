@@ -851,7 +851,7 @@ a.folder-label:hover {
 .recent-notes-item a {
   white-space: normal;
 }
-.recent-notes-item .page-meta {
+.recent-notes-date {
   display: block;
   margin-top: 0.15rem;
   font-size: 0.75rem;

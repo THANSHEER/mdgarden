@@ -49,10 +49,20 @@ export function normalizeVersion(version: string): string {
   return version.trim().replace(/^v/i, '');
 }
 
-/** Compare dotted numeric versions. Returns -1 / 0 / 1 like strcmp. */
+/**
+ * Compare dotted numeric versions. Returns -1 / 0 / 1 like strcmp.
+ * Not full SemVer: a single trailing prerelease suffix (`-rc.1`) is stripped so
+ * `0.4.0-rc.1` compares equal to `0.4.0` rather than as a newer build.
+ */
 export function compareVersions(a: string, b: string): number {
-  const left = normalizeVersion(a).split('.').map((part) => Number.parseInt(part, 10) || 0);
-  const right = normalizeVersion(b).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const left = normalizeVersion(a)
+    .replace(/-.*$/, '')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10) || 0);
+  const right = normalizeVersion(b)
+    .replace(/-.*$/, '')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10) || 0);
   const len = Math.max(left.length, right.length);
   for (let i = 0; i < len; i++) {
     const x = left[i] ?? 0;
@@ -63,10 +73,31 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/** Accept only release-style tags (optionally with a trailing prerelease segment). */
+export const RELEASE_TAG_RE = /^v?\d+\.\d+\.\d+([.-][\w.]+)?$/i;
+
+export function isValidReleaseTag(tag: string): boolean {
+  return RELEASE_TAG_RE.test(tag.trim());
+}
+
 function releaseTagFromUrl(url: string): string | undefined {
   const match = url.match(/\/releases\/tag\/([^/?#]+)/);
-  return match?.[1];
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
+
+function assertGithubReleaseHost(url: string): void {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    throw new Error('Could not determine the latest mdgarden release from GitHub');
+  }
+  if (host !== 'github.com' && host !== 'www.github.com') {
+    throw new Error(`Unexpected release redirect host: ${host}`);
+  }
+}
+
+const UPDATE_FETCH_TIMEOUT_MS = 8000;
 
 /** Resolve the latest GitHub release tag (no API key; follows the /releases/latest redirect). */
 export async function fetchLatestVersion(fetchImpl: typeof fetch = fetch): Promise<string> {
@@ -74,11 +105,16 @@ export async function fetchLatestVersion(fetchImpl: typeof fetch = fetch): Promi
     method: 'HEAD',
     redirect: 'follow',
     headers: { 'User-Agent': 'mdgarden-update' },
+    signal: AbortSignal.timeout(UPDATE_FETCH_TIMEOUT_MS),
   });
+  if (!res.ok) {
+    throw new Error(`GitHub releases returned HTTP ${res.status}`);
+  }
+  assertGithubReleaseHost(res.url);
   const tag =
     releaseTagFromUrl(res.url) ??
     releaseTagFromUrl(res.headers.get('location') ?? '');
-  if (!tag) {
+  if (!tag || !isValidReleaseTag(tag)) {
     throw new Error('Could not determine the latest mdgarden release from GitHub');
   }
   return tag;
@@ -108,6 +144,61 @@ export function detectUpdateSource(execPath = process.execPath): UpdateSource {
   const base = path.basename(normalized).toLowerCase();
   if (base === 'mdgarden' || base === 'mdgarden.exe') return 'standalone';
   return 'npm';
+}
+
+export function getUpdateSource(execPath = process.execPath): UpdateSource {
+  return detectUpdateSource(resolveRealPath(execPath));
+}
+
+export interface UpdateDecision {
+  proceed: boolean;
+  latestTag: string;
+  lines: string[];
+}
+
+/** Decide whether to run an update and which release tag standalone installs should target. */
+export async function decideUpdate(
+  execPath = process.execPath,
+  options: { force?: boolean } = {},
+  fetchImpl: typeof fetch = fetch,
+  currentVersion = VERSION,
+): Promise<UpdateDecision> {
+  const source = getUpdateSource(execPath);
+  const lines: string[] = [];
+  let latestTag = 'latest';
+
+  if (options.force && source !== 'standalone') {
+    lines.push(`Reinstalling (--force) via ${source}...`);
+    return { proceed: true, latestTag, lines };
+  }
+
+  try {
+    const check = await checkForUpdate(currentVersion, fetchImpl);
+    latestTag = check.latestTag;
+    if (!check.updateAvailable && !options.force) {
+      lines.push(`✓ Already up to date (v${check.latest})`);
+      return { proceed: false, latestTag, lines };
+    }
+    if (!check.updateAvailable && options.force) {
+      lines.push(`Already on v${check.latest} — reinstalling (--force)...`);
+    } else {
+      lines.push(`Update available: v${check.current} → v${check.latest}`);
+    }
+    return { proceed: true, latestTag, lines };
+  } catch (err) {
+    const message = (err as Error).message;
+    if (source === 'standalone') {
+      if (options.force) {
+        lines.push(`Could not check GitHub releases: ${message}`);
+        lines.push('Reinstalling with latest release (--force)...');
+        return { proceed: true, latestTag, lines };
+      }
+      throw err;
+    }
+    lines.push(`Could not check GitHub releases: ${message}`);
+    lines.push(`Proceeding with ${source} update...`);
+    return { proceed: true, latestTag, lines };
+  }
 }
 
 export function buildUpdatePlan(

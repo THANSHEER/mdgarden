@@ -61,4 +61,20 @@ describe('resolveEmbed: media kind detection', () => {
     expect(env.lookupAssetDims('/pic.png')).toEqual({ width: 10, height: 20 });
     expect(env.lookupAssetDims('/unknown.png')).toBeUndefined();
   });
+
+  it('records missing media embeds as broken', () => {
+    const env = makeRenderEnv(buildSiteIndex([], assets()));
+    expect(env.resolveEmbed('missing.png', '')).toEqual({
+      kind: 'image',
+      src: '',
+      alt: 'missing',
+    });
+    expect([...env.broken]).toEqual(['missing.png']);
+  });
+
+  it('does not record an empty note embed as broken', () => {
+    const env = makeRenderEnv(buildSiteIndex([], []));
+    expect(env.resolveEmbed('', '')).toMatchObject({ kind: 'note', resolved: false });
+    expect([...env.broken]).toEqual([]);
+  });
 });

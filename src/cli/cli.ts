@@ -5,7 +5,7 @@ import { build } from '../core/build.js';
 import { serve } from './serve.js';
 import { initSite, canPrompt, configExists, redesignSite, runConfigWizard } from './wizard.js';
 import { publish } from './publish.js';
-import { buildUpdatePlan, checkForUpdate, runUpdatePlan } from './update.js';
+import { buildUpdatePlan, decideUpdate, runUpdatePlan } from './update.js';
 import { VERSION } from '../index.js';
 import { getConfigValue, loadConfig, parseConfigValue, setConfigValue, unsetConfigValue } from '../core/config.js';
 
@@ -144,18 +144,11 @@ cli
   .action(async (options: { background?: boolean; force?: boolean }) => {
     try {
       console.log(`Checking for updates (current v${VERSION})...`);
-      const check = await checkForUpdate();
-      if (!check.updateAvailable && !options.force) {
-        console.log(`✓ Already up to date (v${check.latest})`);
-        return;
-      }
-      if (!check.updateAvailable && options.force) {
-        console.log(`Already on v${check.latest} — reinstalling (--force)...`);
-      } else {
-        console.log(`Update available: v${check.current} → v${check.latest}`);
-      }
+      const decision = await decideUpdate(process.execPath, { force: options.force });
+      for (const line of decision.lines) console.log(line);
+      if (!decision.proceed) return;
 
-      const plan = buildUpdatePlan(process.execPath, process.platform, check.latestTag);
+      const plan = buildUpdatePlan(process.execPath, process.platform, decision.latestTag);
       if (options.background) plan.detached = true;
       console.log(`Updating via ${plan.source}...`);
       console.log(plan.note);

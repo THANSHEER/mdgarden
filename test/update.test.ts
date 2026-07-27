@@ -1,12 +1,26 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildUpdatePlan,
   checkForUpdate,
   compareVersions,
+  decideUpdate,
   detectUpdateSource,
   fetchLatestVersion,
+  isValidReleaseTag,
   normalizeVersion,
 } from '../src/cli/update.js';
+
+function okFetch(url: string, location: string | null = null): typeof fetch {
+  return vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    expect(init?.signal).toBeDefined();
+    return {
+      ok: true,
+      status: 200,
+      url,
+      headers: { get: (name: string) => (name.toLowerCase() === 'location' ? location : null) },
+    };
+  }) as unknown as typeof fetch;
+}
 
 describe('update source detection', () => {
   it('detects Homebrew installs from the Cellar path', () => {
@@ -33,24 +47,59 @@ describe('version comparison', () => {
     expect(compareVersions('v0.3.0', '0.3.0')).toBe(0);
     expect(compareVersions('0.4.0', '0.3.9')).toBe(1);
   });
+
+  it('does not treat a prerelease as newer than the same stable version', () => {
+    expect(compareVersions('0.4.0-rc.1', '0.4.0')).toBe(0);
+    expect(compareVersions('0.4.0-rc.1', '0.3.9')).toBe(1);
+  });
+});
+
+describe('release tag validation', () => {
+  it('accepts release-style tags', () => {
+    expect(isValidReleaseTag('v0.4.0')).toBe(true);
+    expect(isValidReleaseTag('0.4.0')).toBe(true);
+    expect(isValidReleaseTag('v0.4.0-rc.1')).toBe(true);
+  });
+
+  it('rejects shell metacharacters and non-semver tags', () => {
+    expect(isValidReleaseTag('$(curl evil)')).toBe(false);
+    expect(isValidReleaseTag('latest')).toBe(false);
+    expect(isValidReleaseTag('v0.4')).toBe(false);
+  });
 });
 
 describe('latest release lookup', () => {
   it('reads the tag from the followed /releases/latest URL', async () => {
-    const fetchImpl = vi.fn(async () => ({
-      url: 'https://github.com/THANSHEER/mdgarden/releases/tag/v0.3.0',
-      headers: { get: () => null },
-    })) as unknown as typeof fetch;
-
+    const fetchImpl = okFetch('https://github.com/THANSHEER/mdgarden/releases/tag/v0.3.0');
     await expect(fetchLatestVersion(fetchImpl)).resolves.toBe('v0.3.0');
   });
 
-  it('reports no update when current matches latest', async () => {
+  it('rejects a non-GitHub redirect host', async () => {
+    const fetchImpl = okFetch('https://evil.example/releases/tag/v0.3.0');
+    await expect(fetchLatestVersion(fetchImpl)).rejects.toThrow(/Unexpected release redirect host/);
+  });
+
+  it('rejects malformed release tags', async () => {
+    const fetchImpl = okFetch(
+      'https://github.com/THANSHEER/mdgarden/releases/tag/$(curl%20evil)',
+    );
+    await expect(fetchLatestVersion(fetchImpl)).rejects.toThrow(
+      /Could not determine the latest mdgarden release/,
+    );
+  });
+
+  it('rejects non-OK responses', async () => {
     const fetchImpl = vi.fn(async () => ({
-      url: 'https://github.com/THANSHEER/mdgarden/releases/tag/v0.3.0',
+      ok: false,
+      status: 403,
+      url: 'https://github.com/THANSHEER/mdgarden/releases/latest',
       headers: { get: () => null },
     })) as unknown as typeof fetch;
+    await expect(fetchLatestVersion(fetchImpl)).rejects.toThrow(/HTTP 403/);
+  });
 
+  it('reports no update when current matches latest', async () => {
+    const fetchImpl = okFetch('https://github.com/THANSHEER/mdgarden/releases/tag/v0.3.0');
     const check = await checkForUpdate('0.3.0', fetchImpl);
     expect(check).toEqual({
       current: '0.3.0',
@@ -61,11 +110,7 @@ describe('latest release lookup', () => {
   });
 
   it('reports an update when current is older', async () => {
-    const fetchImpl = vi.fn(async () => ({
-      url: 'https://github.com/THANSHEER/mdgarden/releases/tag/v0.4.0',
-      headers: { get: () => null },
-    })) as unknown as typeof fetch;
-
+    const fetchImpl = okFetch('https://github.com/THANSHEER/mdgarden/releases/tag/v0.4.0');
     const check = await checkForUpdate('0.3.0', fetchImpl);
     expect(check.updateAvailable).toBe(true);
     expect(check.latestTag).toBe('v0.4.0');
@@ -107,5 +152,66 @@ describe('update plan', () => {
     expect(plan.source).toBe('npm');
     expect(plan.command).toBe('npm');
     expect(plan.args).toEqual(['install', '-g', 'mdgarden@latest']);
+  });
+});
+
+describe('update decision', () => {
+  const failingFetch = vi.fn(async () => {
+    throw new Error('network down');
+  }) as unknown as typeof fetch;
+
+  beforeEach(() => {
+    failingFetch.mockClear();
+  });
+
+  it('skips GitHub when forcing an npm reinstall', async () => {
+    const decision = await decideUpdate('/opt/homebrew/bin/node', { force: true }, failingFetch);
+    expect(decision.proceed).toBe(true);
+    expect(decision.latestTag).toBe('latest');
+    expect(decision.lines).toEqual(['Reinstalling (--force) via npm...']);
+    expect(failingFetch).not.toHaveBeenCalled();
+  });
+
+  it('skips GitHub when forcing a Homebrew reinstall', async () => {
+    const decision = await decideUpdate(
+      '/opt/homebrew/Cellar/mdgarden/0.3.0/bin/mdgarden',
+      { force: true },
+      failingFetch,
+    );
+    expect(decision.proceed).toBe(true);
+    expect(decision.lines).toEqual(['Reinstalling (--force) via homebrew...']);
+    expect(failingFetch).not.toHaveBeenCalled();
+  });
+
+  it('proceeds with npm when GitHub is unreachable', async () => {
+    const decision = await decideUpdate('/opt/homebrew/bin/node', {}, failingFetch);
+    expect(decision.proceed).toBe(true);
+    expect(decision.lines).toEqual([
+      'Could not check GitHub releases: network down',
+      'Proceeding with npm update...',
+    ]);
+  });
+
+  it('proceeds with Homebrew when GitHub is unreachable', async () => {
+    const decision = await decideUpdate(
+      '/opt/homebrew/Cellar/mdgarden/0.3.0/bin/mdgarden',
+      {},
+      failingFetch,
+    );
+    expect(decision.proceed).toBe(true);
+    expect(decision.lines[1]).toBe('Proceeding with homebrew update...');
+  });
+
+  it('still fails for standalone installs when GitHub is unreachable', async () => {
+    await expect(
+      decideUpdate('/usr/local/bin/mdgarden', {}, failingFetch),
+    ).rejects.toThrow('network down');
+  });
+
+  it('falls back to latest when forcing a standalone reinstall without GitHub', async () => {
+    const decision = await decideUpdate('/usr/local/bin/mdgarden', { force: true }, failingFetch);
+    expect(decision.proceed).toBe(true);
+    expect(decision.latestTag).toBe('latest');
+    expect(decision.lines[1]).toBe('Reinstalling with latest release (--force)...');
   });
 });

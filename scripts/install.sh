@@ -11,6 +11,25 @@ set -eu
 REPO="THANSHEER/mdgarden"
 VERSION="${MDGARDEN_VERSION:-latest}"
 
+# Reject unexpected VERSION values before they are interpolated into a URL.
+# Allows "latest" or release-style tags like v0.4.0 / 0.4.0-rc.1.
+case "$VERSION" in
+  latest) ;;
+  v[0-9]*.[0-9]*.[0-9]*|[0-9]*.[0-9]*.[0-9]*)
+    # Extra guard: only [A-Za-z0-9._-] so shell metacharacters never reach the URL.
+    case "$VERSION" in
+      *[!A-Za-z0-9._-]*)
+        echo "mdgarden: invalid MDGARDEN_VERSION '$VERSION'" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "mdgarden: invalid MDGARDEN_VERSION '$VERSION'" >&2
+    exit 1
+    ;;
+esac
+
 # --- detect platform -------------------------------------------------------
 os="$(uname -s)"
 arch="$(uname -m)"
@@ -26,10 +45,11 @@ case "$arch" in
 esac
 
 asset="mdgarden-${os}-${arch}.tar.gz"
+# VERSION is validated above; assemble the URL without embedding untrusted shell.
 if [ "$VERSION" = "latest" ]; then
-  url="https://github.com/${REPO}/releases/latest/download/${asset}"
+  url='https://github.com/'"$REPO"'/releases/latest/download/'"$asset"
 else
-  url="https://github.com/${REPO}/releases/download/${VERSION}/${asset}"
+  url='https://github.com/'"$REPO"'/releases/download/'"$VERSION"'/'"$asset"
 fi
 
 # --- pick a writable install dir ------------------------------------------

@@ -182,19 +182,27 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
     const ext = target.split('.').pop()?.toLowerCase() ?? '';
     const alt = alias || basename(target).replace(/\.[^.]+$/, '');
     if (IMAGE_EXTS.has(ext)) {
-      const src = lookupAssetUrl(index, target) ?? '';
+      const src = lookupAssetUrl(index, target);
+      if (!src) {
+        if (target) broken.add(target);
+        return { kind: 'image', src: '', alt };
+      }
       const dims = index.assetDims.get(src);
       return { kind: 'image', src, alt, width: dims?.width, height: dims?.height };
     }
     if (VIDEO_EXTS.has(ext)) {
-      return { kind: 'video', src: lookupAssetUrl(index, target) ?? '', alt };
+      const src = lookupAssetUrl(index, target);
+      if (!src && target) broken.add(target);
+      return { kind: 'video', src: src ?? '', alt };
     }
     if (AUDIO_EXTS.has(ext)) {
-      return { kind: 'audio', src: lookupAssetUrl(index, target) ?? '', alt };
+      const src = lookupAssetUrl(index, target);
+      if (!src && target) broken.add(target);
+      return { kind: 'audio', src: src ?? '', alt };
     }
     const slug = lookupPageSlug(index, target);
     if (slug === undefined) {
-      broken.add(target);
+      if (target) broken.add(target);
       return { kind: 'note', url: '#', title: alias || target, resolved: false };
     }
     outgoing.add(slug);
