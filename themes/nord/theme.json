@@ -3,19 +3,19 @@
   "label": "Nord",
   "hint": "Cool nordic blue-grey",
   "fonts": {
-    "heading": "Inter, system-ui, -apple-system, sans-serif",
-    "body": "Inter, system-ui, -apple-system, sans-serif",
-    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+    "heading": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "body": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "code": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
   },
   "colors": {
     "light": {
-      "background": "#f4f6f9",
+      "background": "#ffffff",
       "text": "#2e3440",
       "primary": "#5e81ac",
-      "accent": "#88c0d0",
-      "muted": "#5b6675",
-      "border": "#dce1e8",
-      "surface": "#ffffff"
+      "accent": "#81a1c1",
+      "muted": "#6b7380",
+      "border": "#e5e9f0",
+      "surface": "#f4f6f9"
     },
     "dark": {
       "background": "#2e3440",
@@ -24,7 +24,7 @@
       "accent": "#8fbcbb",
       "muted": "#a9b1c0",
       "border": "#3b4252",
-      "surface": "#3b4252"
+      "surface": "#353b49"
     }
   },
   "layout": {

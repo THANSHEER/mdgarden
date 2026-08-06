@@ -4,10 +4,12 @@
 
 import mermaid from 'mermaid';
 
+/** Map the OS color-scheme preference to a Mermaid theme name. */
 function currentTheme(): 'dark' | 'default' {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
 }
 
+/** Initialize Mermaid and render every `pre.mermaid` block on the page. */
 async function renderAll(): Promise<void> {
   const nodes = Array.from(document.querySelectorAll<HTMLElement>('pre.mermaid'));
   if (nodes.length === 0) return;
@@ -20,8 +22,8 @@ async function renderAll(): Promise<void> {
   }
   try {
     await mermaid.run({ nodes });
-  } catch {
-
+  } catch (err) {
+    console.warn('[mdgarden] mermaid render failed:', err);
   }
 }
 

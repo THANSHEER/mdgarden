@@ -7,7 +7,7 @@ import type { Page } from '../types.js';
 // Search index
 // ---------------------------------------------------------------------------
 
-export interface SearchDoc {
+interface SearchDoc {
   id: string;
   url: string;
   title: string;

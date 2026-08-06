@@ -10,6 +10,11 @@ $ErrorActionPreference = 'Stop'
 $repo = 'THANSHEER/mdgarden'
 $version = if ($env:MDGARDEN_VERSION) { $env:MDGARDEN_VERSION } else { 'latest' }
 
+# Stable tags only: "latest" or v0.4.0 / 0.4.0 (no prerelease suffixes).
+if ($version -ne 'latest' -and $version -notmatch '^v?\d+\.\d+\.\d+$') {
+  throw "mdgarden: invalid MDGARDEN_VERSION '$version' (stable tags only, e.g. v0.4.0)"
+}
+
 $arch = 'x64'
 $asset = "mdgarden-win-$arch.zip"
 $url = if ($version -eq 'latest') {

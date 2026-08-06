@@ -6,7 +6,7 @@
 
 **A fast, framework-free static site generator for Markdown notes.**
 
-Current release: `v0.3.0`
+Current release: `v0.4.0`
 
 Search, backlinks, tags, graph view, dark mode, math, and syntax highlighting.
 Zero config. No runtime framework.
@@ -37,7 +37,7 @@ to stay lightweight without a frontend framework or server runtime.
 ## Features
 
 - Obsidian-style wikilinks, embeds, callouts, tags, footnotes, and math
-- Search, backlinks, breadcrumbs, folder explorer, and interactive graphs
+- Search, backlinks, breadcrumbs, folder explorer, recent notes, and interactive graphs
 - Responsive layouts, dark mode, syntax highlighting, Mermaid, and media embeds
 - Keyboard navigation, semantic landmarks, visible focus, and reduced-motion support
 - RSS, sitemap, social metadata, aliases, and sub-path hosting

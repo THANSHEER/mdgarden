@@ -43,11 +43,34 @@ describe('layout: right rail (backlinks + graph toggle)', () => {
     expect(html).toContain('data-graph');
   });
 
-  it('renders a theme toggle button in the sidebar and FOUC script in head', async () => {
+  it('places recent notes inside the right sidebar', async () => {
+    const html = await read(out, 'getting-started/index.html');
+    expect(html).toContain('class="recent-notes"');
+    expect(html).toContain('Recent notes');
+    const aside = html.indexOf('sidebar sidebar-right');
+    const main = html.indexOf('</main>');
+    const recent = html.indexOf('class="recent-notes"');
+    expect(aside).toBeGreaterThan(-1);
+    expect(recent).toBeGreaterThan(main);
+    expect(recent).toBeGreaterThan(aside);
+  });
+
+  it('omits recent notes when the feature is disabled', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-norecent-'));
+    const outDir = path.join(dir, 'out');
+    await fs.writeFile(
+      path.join(dir, 'mdgarden.config.json'),
+      JSON.stringify({ features: { recentNotes: false } }),
+    );
+    await build({ cwd: dir, contentDir: fixtures, outDir: outDir });
+    const html = await read(outDir, 'getting-started/index.html');
+    expect(html).not.toContain('class="recent-notes"');
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('keeps the FOUC theme script in head for system/darkMode preference', async () => {
     const html = await read(out, 'index.html');
-    expect(html).toContain('class="theme-toggle-btn"');
-    expect(html).toContain('class="sun-icon"');
-    expect(html).toContain('class="moon-icon"');
+    expect(html).not.toContain('class="theme-toggle-btn"');
     expect(html).toContain('localStorage.getItem(\'mdgarden-theme\')');
   });
 });

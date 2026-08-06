@@ -2,18 +2,19 @@ import { escapeHtml } from '../utils.js';
 import { withBase } from '../parser/links.js';
 import type { MdgardenConfig, Page } from '../types.js';
 
+/** Join a site `baseUrl` with a root-relative path for sitemap/RSS absolute URLs. */
 function abs(baseUrl: string, url: string): string {
   return `${baseUrl.replace(/\/$/, '')}${url}`;
 }
 
-/** Build sitemap.xml. */
-export function buildSitemap(pages: Page[], baseUrl: string): string {
-  const urls = pages
-    .map((p) => {
-      const lastmod = p.date ? `<lastmod>${isoDate(p.date)}</lastmod>` : '';
-      return `<url><loc>${escapeHtml(abs(baseUrl, p.url))}</loc>${lastmod}</url>`;
-    })
-    .join('');
+/** Build sitemap.xml, including any generated pages (tag index, folder indexes, etc.). */
+export function buildSitemap(pages: Page[], baseUrl: string, extraUrls: string[] = []): string {
+  const noteUrls = pages.map((p) => {
+    const lastmod = p.date ? `<lastmod>${isoDate(p.date)}</lastmod>` : '';
+    return `<url><loc>${escapeHtml(abs(baseUrl, p.url))}</loc>${lastmod}</url>`;
+  });
+  const generatedUrls = extraUrls.map((u) => `<url><loc>${escapeHtml(abs(baseUrl, u))}</loc></url>`);
+  const urls = [...noteUrls, ...generatedUrls].join('');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>\n`;
 }
 

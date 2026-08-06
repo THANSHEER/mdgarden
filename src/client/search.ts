@@ -28,13 +28,15 @@ interface Doc {
 
 /** Client search module. */
 export function initSearch(): void {
-  const button = document.querySelector<HTMLButtonElement>('[data-search-open]');
-  if (!button) return;
-  const trigger = button;
-  const searchPlaceholder = trigger.dataset.placeholder || 'Search notes…';
-  const searchLabel = trigger.getAttribute('aria-label') || 'Search';
-  const closeLabel = trigger.dataset.closeLabel || 'Close';
-  const resultsLabel = trigger.dataset.resultsLabel || 'Search results';
+  const buttons = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('[data-search-open]'),
+  );
+  if (buttons.length === 0) return;
+  const primary = buttons[0];
+  const searchPlaceholder = primary.dataset.placeholder || 'Search notes…';
+  const searchLabel = primary.getAttribute('aria-label') || 'Search';
+  const closeLabel = primary.dataset.closeLabel || 'Close';
+  const resultsLabel = primary.dataset.resultsLabel || 'Search results';
 
   let mini: MiniSearch<Doc> | null = null;
   let loading = false;
@@ -43,6 +45,7 @@ export function initSearch(): void {
   let input: HTMLInputElement | null = null;
   let results: HTMLElement | null = null;
   let status: HTMLElement | null = null;
+  let opener: HTMLButtonElement = primary;
 
   async function ensureIndex(): Promise<void> {
     if (mini || loading) return;
@@ -90,8 +93,8 @@ export function initSearch(): void {
     });
     modal.querySelector<HTMLButtonElement>('.search-close')?.addEventListener('click', close);
     modal.addEventListener('close', () => {
-      trigger.setAttribute('aria-expanded', 'false');
-      trigger.focus();
+      for (const btn of buttons) btn.setAttribute('aria-expanded', 'false');
+      opener.focus();
     });
     input?.addEventListener('input', () => runQuery(input?.value ?? ''));
     input?.addEventListener('keydown', (e) => {
@@ -113,10 +116,11 @@ export function initSearch(): void {
     results?.addEventListener('click', () => close());
   }
 
-  async function open(): Promise<void> {
+  async function open(from: HTMLButtonElement = primary): Promise<void> {
+    opener = from;
     ensureModal();
     if (!modal?.open) modal?.showModal();
-    trigger.setAttribute('aria-expanded', 'true');
+    for (const btn of buttons) btn.setAttribute('aria-expanded', 'true');
     input?.focus();
     await ensureIndex();
     runQuery(input?.value ?? '');
@@ -144,9 +148,11 @@ export function initSearch(): void {
       .join('');
   }
 
-  trigger.addEventListener('click', () => {
-    void open();
-  });
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      void open(button);
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement | null;
@@ -176,11 +182,10 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Escape `text` and wrap query term matches in `<mark>` for search results. */
 function highlightText(text: string, query: string): string {
   if (!query.trim()) return escapeHtml(text);
   const terms = query.split(/\s+/).filter((t) => t.length > 0).map(escapeRegExp);
-  if (terms.length === 0) return escapeHtml(text);
-  
   const regex = new RegExp(`(${terms.join('|')})`, 'gi');
   let match;
   const ranges: { start: number; end: number }[] = [];

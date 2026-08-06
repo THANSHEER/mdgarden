@@ -12,7 +12,13 @@ import { UI, t } from '../src/utils.js';
 describe('config defaults', () => {
   it('keeps new feature flags on (comments off) and base defaults', () => {
     const f = DEFAULT_CONFIG.features;
-    expect([f.readingTime, f.mermaid, f.explorer, f.breadcrumbs]).toEqual([true, true, true, true]);
+    expect([f.readingTime, f.mermaid, f.explorer, f.breadcrumbs, f.recentNotes]).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
     expect(f.comments).toBe(false);
     expect(DEFAULT_CONFIG.build.basePath).toBe('');
     expect(DEFAULT_CONFIG.build.folderIndex).toBe(true);
@@ -31,7 +37,7 @@ describe('config defaults', () => {
 describe('config get/set/unset (dotted paths)', () => {
   it('reads a nested value by dotted path', () => {
     expect(getConfigValue(DEFAULT_CONFIG, 'site.title')).toBe('My Notes');
-    expect(getConfigValue(DEFAULT_CONFIG, 'theme.colors.light.primary')).toBe('#284b63');
+    expect(getConfigValue(DEFAULT_CONFIG, 'theme.colors.light.primary')).toBe('#5b7c8d');
   });
 
   it('returns undefined for an unknown path without throwing', () => {

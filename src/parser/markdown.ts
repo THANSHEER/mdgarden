@@ -252,6 +252,20 @@ export function createMarkdown(config: MdgardenConfig, options: MarkdownOptions 
     };
   }
 
+  // External links — open in a new tab with security attributes.
+  const defaultLinkOpen = md.renderer.rules.link_open;
+  md.renderer.rules.link_open = (tokens, idx, opts2, env, self) => {
+    const token = tokens[idx];
+    const href = token.attrGet('href') ?? '';
+    if (/^https?:\/\//i.test(href)) {
+      token.attrSet('target', '_blank');
+      token.attrSet('rel', 'noopener noreferrer');
+    }
+    return defaultLinkOpen
+      ? defaultLinkOpen(tokens, idx, opts2, env, self)
+      : self.renderToken(tokens, idx, opts2);
+  };
+
   for (const plugin of options.plugins ?? []) plugin.markdown?.(md, config);
 
   return md;

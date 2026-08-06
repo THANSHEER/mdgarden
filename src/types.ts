@@ -35,30 +35,6 @@ export interface ThemeLayout {
   };
 }
 
-export interface MdgardenTheme {
-  name: string;
-  darkMode: 'auto' | 'light' | 'dark';
-  colors: {
-    light: ThemeColors;
-    dark: ThemeColors;
-  };
-  fonts: {
-    heading: string;
-    body: string;
-    code: string;
-  };
-  layout: ThemeLayout;
-}
-
-export interface ThemePreset {
-  id: string;
-  label: string;
-  hint: string;
-  colors: { light: ThemeColors; dark: ThemeColors };
-  fonts: { heading: string; body: string; code: string };
-  layout: ThemeLayout;
-}
-
 export interface ThemeConfig {
   name: string;
   darkMode: DarkModeMode;
@@ -93,6 +69,8 @@ export interface FeatureFlags {
   explorer: boolean;
   /** Breadcrumb trail on nested pages. */
   breadcrumbs: boolean;
+  /** Right-rail list of newest published notes. */
+  recentNotes: boolean;
   /** Comment widget (requires `comments` config). Off by default. */
   comments: boolean;
 }
@@ -227,4 +205,6 @@ export interface RenderEnv {
   outgoing: Set<string>;
   /** Headings collected during this render. */
   headings: Heading[];
+  /** Wikilink / embed targets that could not be resolved during this render. */
+  broken: Set<string>;
 }

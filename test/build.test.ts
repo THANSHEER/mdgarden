@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { build } from '../src/core/build.js';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
@@ -231,5 +231,60 @@ describe('build with basePath', () => {
     expect(html).toContain('src="/notes/mdgarden.client.js"');
     expect(html).toContain('data-base="/notes"');
     expect(html).toContain('href="/notes/concepts/wikilinks/"'); // resolved wikilink
+  });
+});
+
+describe('incremental cache: site index invalidation', () => {
+  it('re-resolves wikilinks when a target note is added without touching the linker', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cache-add-'));
+    const out = path.join(dir, 'out');
+    await fs.writeFile(path.join(dir, 'A.md'), 'See [[B]]\n');
+
+    const warn1 = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await build({ cwd: dir, contentDir: '.', outDir: out });
+    warn1.mockRestore();
+
+    let html = await read(out, 'a/index.html');
+    expect(html).toContain('wikilink-broken');
+
+    // Preserve A's mtime so a naive mtime-only cache would reuse stale HTML.
+    const aPath = path.join(dir, 'A.md');
+    const aStat = await fs.stat(aPath);
+    await fs.writeFile(path.join(dir, 'B.md'), '# B\n\nHello\n');
+    await fs.utimes(aPath, aStat.atime, aStat.mtime);
+
+    const warn2 = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await build({ cwd: dir, contentDir: '.', outDir: out });
+    const brokenWarns = warn2.mock.calls.flat().join('\n');
+    warn2.mockRestore();
+
+    html = await read(out, 'a/index.html');
+    expect(html).toContain('href="/b/"');
+    expect(html).not.toContain('wikilink-broken');
+    expect(brokenWarns).not.toMatch(/\[\[B\]\]/);
+
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it('invalidates cached hrefs when a target note is renamed away', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mdgarden-cache-rename-'));
+    const out = path.join(dir, 'out');
+    await fs.writeFile(path.join(dir, 'A.md'), 'See [[B]]\n');
+    await fs.writeFile(path.join(dir, 'B.md'), '# B\n');
+
+    await build({ cwd: dir, contentDir: '.', outDir: out });
+    expect(await read(out, 'a/index.html')).toContain('href="/b/"');
+
+    const aPath = path.join(dir, 'A.md');
+    const aStat = await fs.stat(aPath);
+    await fs.rename(path.join(dir, 'B.md'), path.join(dir, 'C.md'));
+    await fs.utimes(aPath, aStat.atime, aStat.mtime);
+
+    await build({ cwd: dir, contentDir: '.', outDir: out });
+    const html = await read(out, 'a/index.html');
+    expect(html).toContain('wikilink-broken');
+    expect(html).not.toContain('href="/b/"');
+
+    await fs.rm(dir, { recursive: true, force: true });
   });
 });

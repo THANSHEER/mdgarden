@@ -3,28 +3,28 @@
   "label": "Ink",
   "hint": "Minimal monochrome, serif body",
   "fonts": {
-    "heading": "Inter, system-ui, -apple-system, sans-serif",
+    "heading": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
     "body": "Georgia, Cambria, \"Times New Roman\", serif",
-    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+    "code": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
   },
   "colors": {
     "light": {
       "background": "#ffffff",
       "text": "#1a1a1a",
-      "primary": "#111111",
+      "primary": "#222222",
       "accent": "#555555",
       "muted": "#707070",
       "border": "#e6e6e6",
-      "surface": "#fafafa"
+      "surface": "#f7f7f7"
     },
     "dark": {
-      "background": "#0e0e0e",
+      "background": "#111111",
       "text": "#ededed",
-      "primary": "#fafafa",
+      "primary": "#f0f0f0",
       "accent": "#b8b8b8",
       "muted": "#8a8a8a",
       "border": "#2a2a2a",
-      "surface": "#171717"
+      "surface": "#1a1a1a"
     }
   },
   "layout": {

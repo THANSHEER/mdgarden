@@ -89,7 +89,8 @@ export function outPathForSlug(slug: string): string {
   return slug ? `${slug}/index.html` : 'index.html';
 }
 
-export function basename(path: string): string {
+/** Final path segment of a `/`-separated relative path. */
+function basename(path: string): string {
   const parts = path.split('/');
   return parts[parts.length - 1] ?? path;
 }
@@ -162,6 +163,7 @@ function lookupAssetUrl(index: SiteIndex, target: string): string | undefined {
 /** Create rendering environment. */
 export function makeRenderEnv(index: SiteIndex): RenderEnv {
   const outgoing = new Set<string>();
+  const broken = new Set<string>();
 
   const resolveLink = (target: string, anchor: string): LinkResolution => {
     if (!target.trim() && anchor) {
@@ -170,6 +172,7 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
     const slug = lookupPageSlug(index, target);
     const hash = anchor ? `#${anchorSlug(anchor)}` : '';
     if (slug === undefined) {
+      if (target) broken.add(target);
       return { url: `${hash || '#'}`, resolved: false };
     }
     outgoing.add(slug);
@@ -180,18 +183,27 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
     const ext = target.split('.').pop()?.toLowerCase() ?? '';
     const alt = alias || basename(target).replace(/\.[^.]+$/, '');
     if (IMAGE_EXTS.has(ext)) {
-      const src = lookupAssetUrl(index, target) ?? '';
+      const src = lookupAssetUrl(index, target);
+      if (!src) {
+        if (target) broken.add(target);
+        return { kind: 'image', src: '', alt };
+      }
       const dims = index.assetDims.get(src);
       return { kind: 'image', src, alt, width: dims?.width, height: dims?.height };
     }
     if (VIDEO_EXTS.has(ext)) {
-      return { kind: 'video', src: lookupAssetUrl(index, target) ?? '', alt };
+      const src = lookupAssetUrl(index, target);
+      if (!src && target) broken.add(target);
+      return { kind: 'video', src: src ?? '', alt };
     }
     if (AUDIO_EXTS.has(ext)) {
-      return { kind: 'audio', src: lookupAssetUrl(index, target) ?? '', alt };
+      const src = lookupAssetUrl(index, target);
+      if (!src && target) broken.add(target);
+      return { kind: 'audio', src: src ?? '', alt };
     }
     const slug = lookupPageSlug(index, target);
     if (slug === undefined) {
+      if (target) broken.add(target);
       return { kind: 'note', url: '#', title: alias || target, resolved: false };
     }
     outgoing.add(slug);
@@ -201,5 +213,5 @@ export function makeRenderEnv(index: SiteIndex): RenderEnv {
   const lookupAssetDims = (src: string): { width: number; height: number } | undefined =>
     index.assetDims.get(src);
 
-  return { resolveLink, resolveEmbed, lookupAssetDims, outgoing, headings: [] };
+  return { resolveLink, resolveEmbed, lookupAssetDims, outgoing, headings: [], broken };
 }

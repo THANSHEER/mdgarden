@@ -90,11 +90,23 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   if (!ctx) return;
 
   const dpr = window.devicePixelRatio || 1;
-  let width = container.clientWidth || 240;
-  const height = 280;
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  canvas.style.height = `${height}px`;
+  let width = 0;
+  let height = 0;
+
+  const measure = (): boolean => {
+    const nextWidth = Math.max(1, container.clientWidth || 240);
+    const cssHeight = Number.parseFloat(getComputedStyle(canvas).height);
+    const nextHeight = Math.max(180, Math.round(Number.isFinite(cssHeight) && cssHeight > 0 ? cssHeight : 272));
+    if (Math.abs(nextWidth - width) < 1 && Math.abs(nextHeight - height) < 1) return false;
+    width = nextWidth;
+    height = nextHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = '100%';
+    canvas.style.height = `${height}px`;
+    return true;
+  };
+  measure();
   const graphLinks = container.querySelector<HTMLUListElement>('.graph-links ul');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -123,6 +135,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   let settled = false;
   let rafId = 0;
   let hoveredNode: SimNode | null = null;
+  let needsFit = false;
 
   function setData(sub: GraphData): void {
     if (rafId) cancelAnimationFrame(rafId);
@@ -152,6 +165,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     view.scale = 1;
     view.offsetX = 0;
     view.offsetY = 0;
+    needsFit = true;
     nodes = sub.nodes.map((n, i) => ({
       ...n,
       x: cx + Math.cos((i / sub.nodes.length) * Math.PI * 2) * 40 + (Math.random() - 0.5),
@@ -169,6 +183,8 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     if (reduceMotion) {
       for (let i = 0; i < 180 && !settled; i++) settled = tick();
       settled = true;
+      fitView();
+      needsFit = false;
       draw();
     } else {
       rafId = requestAnimationFrame(loop);
@@ -248,7 +264,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   // gx/gy are graph-space — every caller must run screenToGraph() first.
   function hitTest(gx: number, gy: number): SimNode | null {
     for (const n of nodes) {
-      const r = (n.id === slug ? 6 : 4) + 6;
+      const r = (n.id === slug ? 8 : 6) + 10;
       if ((gx - n.x) ** 2 + (gy - n.y) ** 2 < r * r) return n;
     }
     return null;
@@ -304,7 +320,7 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
         ctx.globalAlpha = 1.0;
       }
 
-      const r = isCurrent ? 8 : 6;
+      const r = isCurrent ? 10 : 7;
 
       // Glow effect on current-page node
       if (isCurrent) {
@@ -336,7 +352,16 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
     settled = tick();
     draw();
     frame++;
-    rafId = !settled && frame < 600 ? requestAnimationFrame(loop) : 0;
+    if (!settled && frame < 600) {
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+    rafId = 0;
+    if (settled && needsFit) {
+      fitView();
+      needsFit = false;
+      draw();
+    }
   }
 
   function wake(): void {
@@ -499,22 +524,46 @@ function setup(container: HTMLElement, canvas: HTMLCanvasElement, data: GraphDat
   zoomInBtn?.addEventListener('click', () => zoomCenter(1.2));
   zoomOutBtn?.addEventListener('click', () => zoomCenter(1 / 1.2));
   zoomResetBtn?.addEventListener('click', () => {
-    view.scale = 1;
-    view.offsetX = 0;
-    view.offsetY = 0;
+    fitView();
     draw();
   });
 
   canvas.style.cursor = 'grab';
 
+  /** Center and scale the graph so all nodes fit inside the canvas with padding. */
+  function fitView(): void {
+    if (nodes.length === 0) {
+      view.scale = 1;
+      view.offsetX = 0;
+      view.offsetY = 0;
+      return;
+    }
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (const n of nodes) {
+      minX = Math.min(minX, n.x);
+      maxX = Math.max(maxX, n.x);
+      minY = Math.min(minY, n.y);
+      maxY = Math.max(maxY, n.y);
+    }
+    const pad = 36;
+    const spanX = Math.max(40, maxX - minX);
+    const spanY = Math.max(40, maxY - minY);
+    const scale = Math.min(
+      MAX_SCALE,
+      Math.max(MIN_SCALE, Math.min((width - pad * 2) / spanX, (height - pad * 2) / spanY)),
+    );
+    view.scale = scale;
+    view.offsetX = width / 2 - ((minX + maxX) / 2) * scale;
+    view.offsetY = height / 2 - ((minY + maxY) / 2) * scale;
+  }
+
   const resizeCanvas = (): void => {
-    const nextWidth = container.clientWidth || 220;
-    if (Math.abs(nextWidth - width) < 1) return;
-    width = nextWidth;
+    if (!measure()) return;
     cx = width / 2;
     cy = height / 2;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
     for (const node of nodes) {
       node.x = Math.max(12, Math.min(width - 12, node.x));
       node.y = Math.max(12, Math.min(height - 12, node.y));

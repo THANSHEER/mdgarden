@@ -29,11 +29,20 @@ Use the built-in updater:
 mdgarden update
 ```
 
+It checks GitHub Releases first. If you're already on the latest version it
+stops; otherwise it upgrades in place.
+
 Add `--background` if you want the update to run detached and return control
 immediately:
 
 ```bash
 mdgarden update --background
+```
+
+Force a reinstall even when you're already current:
+
+```bash
+mdgarden update --force
 ```
 
 It automatically chooses the right update path:

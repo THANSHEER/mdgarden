@@ -71,8 +71,13 @@ describe('generated accessibility and responsive foundations', () => {
     expect(css).toContain('direction: rtl');
     expect(css).toContain('scrollbar-width: thin');
     expect(css).toContain('.explorer-file a.is-active::before');
-    expect(css).toContain('--pane-inline-space: clamp(1rem, 1.4vw, 1.5rem)');
-    expect(css).toContain('padding: 0 var(--article-inline-space) 1.5rem');
+    expect(css).toContain('--pane-inline-space: 0.85rem');
+    expect(css).toContain('padding: 1.25rem var(--article-inline-space) 3rem');
+    expect(css).toContain('.toc-list a.is-active');
+    expect(css).toContain('--sidebar-logo-size: 11.5rem');
+    expect(css).toContain('--sidebar-right-width: 22rem');
+    expect(css).toContain('--graph-height: 17rem');
+    expect(css).toContain('.is-scrolling');
   });
 
   it('demotes a leading Markdown H1 that differs from the page title', () => {
