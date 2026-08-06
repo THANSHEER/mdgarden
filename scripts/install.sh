@@ -12,18 +12,14 @@ REPO="THANSHEER/mdgarden"
 VERSION="${MDGARDEN_VERSION:-latest}"
 
 # Reject unexpected VERSION values before they are interpolated into a URL.
-# Allows "latest" or release-style tags like v0.4.0 / 0.4.0-rc.1.
+# Allows "latest" or stable tags like v0.4.0 / 0.4.0 (no prerelease suffixes).
 case "$VERSION" in
   latest) ;;
-  v[0-9]*.[0-9]*.[0-9]*|[0-9]*.[0-9]*.[0-9]*)
-    # Extra guard: only [A-Za-z0-9._-] so shell metacharacters never reach the URL.
-    case "$VERSION" in
-      *[!A-Za-z0-9._-]*)
-        echo "mdgarden: invalid MDGARDEN_VERSION '$VERSION'" >&2
-        exit 1
-        ;;
-    esac
+  *-*|*[!A-Za-z0-9.]*)
+    echo "mdgarden: invalid MDGARDEN_VERSION '$VERSION' (stable tags only, e.g. v0.4.0)" >&2
+    exit 1
     ;;
+  v[0-9]*.[0-9]*.[0-9]*|[0-9]*.[0-9]*.[0-9]*) ;;
   *)
     echo "mdgarden: invalid MDGARDEN_VERSION '$VERSION'" >&2
     exit 1

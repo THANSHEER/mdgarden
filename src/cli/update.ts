@@ -54,8 +54,7 @@ export function normalizeVersion(version: string): string {
 
 /**
  * Compare dotted numeric versions. Returns -1 / 0 / 1 like strcmp.
- * Not full SemVer: a single trailing prerelease suffix (`-rc.1`) is stripped so
- * `0.4.0-rc.1` compares equal to `0.4.0` rather than as a newer build.
+ * Stable releases only (`major.minor.patch`); prerelease suffixes are ignored if present.
  */
 export function compareVersions(a: string, b: string): number {
   const left = normalizeVersion(a)
@@ -76,10 +75,10 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** Accept only release-style tags (optionally with a trailing prerelease segment). */
-export const RELEASE_TAG_RE = /^v?\d+\.\d+\.\d+([.-][\w.]+)?$/i;
+/** Accept only stable release tags (`1.2.3` or `v1.2.3`). Prereleases are not supported yet. */
+export const RELEASE_TAG_RE = /^v?\d+\.\d+\.\d+$/i;
 
-/** Return true when `tag` looks like a safe release tag (`v1.2.3` or with a prerelease suffix). */
+/** Return true when `tag` looks like a safe stable release tag. */
 export function isValidReleaseTag(tag: string): boolean {
   return RELEASE_TAG_RE.test(tag.trim());
 }

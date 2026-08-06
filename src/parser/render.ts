@@ -209,7 +209,7 @@ ${opts.bodyHtml}${pluginBodyEnd}
 </main>
 ${rightSidebar}
 </div>
-<a class="powered-by-mdgarden" href="https://github.com/THANSHEER/Mdgarden" title="Built with mdgarden">${escapeHtml(t('builtWith', config))} mdgarden</a>
+<a class="powered-by-mdgarden" href="https://geekstash.dev/mdgarden" title="Built with mdgarden">${escapeHtml(t('builtWith', config))} mdgarden</a>
 <script src="${escapeAttr(ctx.clientJsHref)}" defer></script>
 </body>
 </html>`;

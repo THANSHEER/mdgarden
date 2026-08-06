@@ -47,21 +47,17 @@ describe('version comparison', () => {
     expect(compareVersions('v0.3.0', '0.3.0')).toBe(0);
     expect(compareVersions('0.4.0', '0.3.9')).toBe(1);
   });
-
-  it('does not treat a prerelease as newer than the same stable version', () => {
-    expect(compareVersions('0.4.0-rc.1', '0.4.0')).toBe(0);
-    expect(compareVersions('0.4.0-rc.1', '0.3.9')).toBe(1);
-  });
 });
 
 describe('release tag validation', () => {
-  it('accepts release-style tags', () => {
+  it('accepts stable release tags', () => {
     expect(isValidReleaseTag('v0.4.0')).toBe(true);
     expect(isValidReleaseTag('0.4.0')).toBe(true);
-    expect(isValidReleaseTag('v0.4.0-rc.1')).toBe(true);
   });
 
-  it('rejects shell metacharacters and non-semver tags', () => {
+  it('rejects prereleases, shell metacharacters, and non-semver tags', () => {
+    expect(isValidReleaseTag('v0.4.0-rc.1')).toBe(false);
+    expect(isValidReleaseTag('0.4.0-beta')).toBe(false);
     expect(isValidReleaseTag('$(curl evil)')).toBe(false);
     expect(isValidReleaseTag('latest')).toBe(false);
     expect(isValidReleaseTag('v0.4')).toBe(false);
