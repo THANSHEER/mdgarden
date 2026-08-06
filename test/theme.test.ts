@@ -10,22 +10,22 @@ function withDarkMode(mode: MdgardenConfig['theme']['darkMode']): MdgardenConfig
 describe('buildStyles', () => {
   it('"auto": emits light vars by default plus a prefers-color-scheme dark block, with on-site control support', () => {
     const css = buildStyles(withDarkMode('auto'));
-    expect(css).toContain(':root, :root[data-theme="light"] { --color-bg:#faf8f8');
+    expect(css).toContain(':root, :root[data-theme="light"] { --color-bg:#ffffff');
     expect(css).toContain('@media (prefers-color-scheme: dark)');
-    expect(css).toContain(':root[data-theme="dark"] { --color-bg:#161618');
+    expect(css).toContain(':root[data-theme="dark"] { --color-bg:#1e1e1e');
   });
 
   it('"light": only emits light vars, no dark block at all', () => {
     const css = buildStyles(withDarkMode('light'));
-    expect(css).toContain('--color-bg:#faf8f8');
-    expect(css).not.toContain('--color-bg:#161618');
+    expect(css).toContain('--color-bg:#ffffff');
+    expect(css).not.toContain('--color-bg:#1e1e1e');
     expect(css).not.toContain('prefers-color-scheme');
   });
 
   it('"dark": only emits dark vars', () => {
     const css = buildStyles(withDarkMode('dark'));
-    expect(css).toContain('--color-bg:#161618');
-    expect(css).not.toContain('--color-bg:#faf8f8');
+    expect(css).toContain('--color-bg:#1e1e1e');
+    expect(css).not.toContain('--color-bg:#ffffff');
   });
 
   it('includes font variables and the bundled base stylesheet', () => {

@@ -215,6 +215,33 @@ ${rightSidebar}
 </html>`;
 }
 
+const searchIconSvg =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+
+/** Shared search open control; `icon` variant is for the compact mobile bar. */
+function renderSearchTrigger(
+  ctx: RenderContext,
+  variant: 'full' | 'icon' = 'full',
+): string {
+  if (!ctx.searchIndexHref) return '';
+  const { config } = ctx;
+  const searchLabel = escapeAttr(t('search', config));
+  const className =
+    variant === 'icon' ? 'search-trigger search-trigger-icon icon-button' : 'search-trigger';
+  const label =
+    variant === 'icon'
+      ? ''
+      : `<span class="search-trigger-label">${escapeHtml(t('searchPlaceholder', config))}</span>`;
+  return (
+    `<button class="${className}" type="button" data-search-open ` +
+    `data-placeholder="${escapeAttr(t('searchPlaceholder', config))}" ` +
+    `data-close-label="${escapeAttr(t('close', config))}" ` +
+    `data-results-label="${escapeAttr(t('searchResults', config))}" ` +
+    `aria-label="${searchLabel}" aria-haspopup="dialog" aria-expanded="false">` +
+    `${searchIconSvg}${label}</button>`
+  );
+}
+
 /** Render left sidebar header. */
 function renderSidebarHeader(ctx: RenderContext): string {
   const { config } = ctx;
@@ -224,30 +251,11 @@ function renderSidebarHeader(ctx: RenderContext): string {
         .join('')}</nav>`
     : '';
 
-  const searchLabel = escapeAttr(t('search', config));
-  const searchIcon = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
-  const search = ctx.searchIndexHref
-    ? `<button class="search-trigger" type="button" data-search-open ` +
-      `data-placeholder="${escapeAttr(t('searchPlaceholder', config))}" ` +
-      `data-close-label="${escapeAttr(t('close', config))}" ` +
-      `data-results-label="${escapeAttr(t('searchResults', config))}" ` +
-      `aria-label="${searchLabel}" aria-haspopup="dialog" aria-expanded="false">` +
-      `${searchIcon}<span class="search-trigger-label">${escapeHtml(t('searchPlaceholder', config))}</span></button>`
-    : '';
-
-  const themeToggle = `<button class="theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">` +
-    `<svg class="sun-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>` +
-    `<svg class="moon-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>` +
-    `</button>`;
-
   return `<div class="sidebar-header">
 ${renderSidebarLogo(config)}
-<div class="sidebar-header-top">
 <a class="site-title" href="${escapeAttr(withBase('/'))}">${escapeHtml(config.site.title)}</a>
-${themeToggle}
-</div>
 ${nav}
-${search}
+${renderSearchTrigger(ctx, 'full')}
 </div>`;
 }
 
@@ -273,10 +281,14 @@ function renderMobileBar(ctx: RenderContext): string {
   const { config } = ctx;
   const menuLabel = escapeAttr(t('menu', config));
   const closeLabel = escapeAttr(t('close', config));
+  const actions = renderSearchTrigger(ctx, 'icon')
+    ? `<div class="mobile-bar-actions">${renderSearchTrigger(ctx, 'icon')}</div>`
+    : '';
 
   return `<header class="mobile-bar">
 <button class="icon-button" type="button" data-sidebar-toggle aria-controls="site-sidebar" aria-expanded="false" aria-label="${menuLabel}" title="${menuLabel}">☰</button>
 <a class="site-title" href="${escapeAttr(withBase('/'))}">${escapeHtml(config.site.title)}</a>
+${actions}
 </header>
 <button class="sidebar-backdrop" type="button" data-sidebar-backdrop aria-label="${closeLabel}"></button>`;
 }
@@ -377,6 +389,7 @@ function renderMeta(opts: DocumentOptions, config: MdgardenConfig): string {
   return `<div class="page-meta">${parts.join('')}</div>`;
 }
 
+/** Render the "linked references" list for the current page. */
 function renderBacklinks(backlinks: Page[], config: MdgardenConfig): string {
   if (backlinks.length === 0) return '';
   const items = backlinks
@@ -390,6 +403,7 @@ function renderBacklinks(backlinks: Page[], config: MdgardenConfig): string {
 
 const RECENT_NOTES_LIMIT = 5;
 
+/** Sort newest frontmatter date first; undated notes last; title breaks ties. */
 function byDateThenTitle(a: Page, b: Page): number {
   if (a.date && b.date) {
     const aTime = Date.parse(a.date);
@@ -423,6 +437,7 @@ function renderRecentNotes(pages: Page[], currentUrl: string, config: MdgardenCo
   return `<section class="recent-notes"><h2>${escapeHtml(t('recentNotes', config))}</h2><ul class="recent-notes-list">${items}</ul></section>`;
 }
 
+/** Format a note date for display using the site locale; returns the raw value if invalid. */
 function formatDate(value: string, config: MdgardenConfig): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;

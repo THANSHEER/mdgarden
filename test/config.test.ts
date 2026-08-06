@@ -37,7 +37,7 @@ describe('config defaults', () => {
 describe('config get/set/unset (dotted paths)', () => {
   it('reads a nested value by dotted path', () => {
     expect(getConfigValue(DEFAULT_CONFIG, 'site.title')).toBe('My Notes');
-    expect(getConfigValue(DEFAULT_CONFIG, 'theme.colors.light.primary')).toBe('#284b63');
+    expect(getConfigValue(DEFAULT_CONFIG, 'theme.colors.light.primary')).toBe('#5b7c8d');
   });
 
   it('returns undefined for an unknown path without throwing', () => {

@@ -56,7 +56,7 @@ describe('redesignSite', () => {
     const { config, configPath } = await redesignSite(dir, { yes: true, theme: 'forest' });
 
     expect(config.theme.name).toBe('forest');
-    expect(config.theme.colors.light.primary).toBe('#2f6f4f');
+    expect(config.theme.colors.light.primary).toBe('#3d7a58');
     expect(config.site.title).toBe('My Garden');
     expect(config.build.landingPage).toBe(original.build.landingPage);
 

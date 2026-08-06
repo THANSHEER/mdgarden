@@ -89,6 +89,7 @@ export function outPathForSlug(slug: string): string {
   return slug ? `${slug}/index.html` : 'index.html';
 }
 
+/** Final path segment of a `/`-separated relative path. */
 function basename(path: string): string {
   const parts = path.split('/');
   return parts[parts.length - 1] ?? path;

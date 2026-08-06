@@ -68,11 +68,9 @@ describe('layout: right rail (backlinks + graph toggle)', () => {
     await fs.rm(dir, { recursive: true, force: true });
   });
 
-  it('renders a theme toggle button in the sidebar and FOUC script in head', async () => {
+  it('keeps the FOUC theme script in head for system/darkMode preference', async () => {
     const html = await read(out, 'index.html');
-    expect(html).toContain('class="theme-toggle-btn"');
-    expect(html).toContain('class="sun-icon"');
-    expect(html).toContain('class="moon-icon"');
+    expect(html).not.toContain('class="theme-toggle-btn"');
     expect(html).toContain('localStorage.getItem(\'mdgarden-theme\')');
   });
 });

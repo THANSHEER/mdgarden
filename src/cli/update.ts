@@ -28,14 +28,17 @@ export interface VersionCheck {
   updateAvailable: boolean;
 }
 
+/** Normalize path separators to `/` for reliable substring checks. */
 function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/');
 }
 
+/** Escape a value for safe inclusion inside a PowerShell single-quoted string. */
 function escapePowerShellSingleQuoted(value: string): string {
   return value.replace(/'/g, "''");
 }
 
+/** Resolve symlinks when possible; fall back to the normalized input path. */
 function resolveRealPath(filePath: string): string {
   try {
     return normalizePath(realpathSync(filePath));
@@ -76,15 +79,18 @@ export function compareVersions(a: string, b: string): number {
 /** Accept only release-style tags (optionally with a trailing prerelease segment). */
 export const RELEASE_TAG_RE = /^v?\d+\.\d+\.\d+([.-][\w.]+)?$/i;
 
+/** Return true when `tag` looks like a safe release tag (`v1.2.3` or with a prerelease suffix). */
 export function isValidReleaseTag(tag: string): boolean {
   return RELEASE_TAG_RE.test(tag.trim());
 }
 
+/** Extract the `/releases/tag/<name>` segment from a GitHub release URL. */
 function releaseTagFromUrl(url: string): string | undefined {
   const match = url.match(/\/releases\/tag\/([^/?#]+)/);
   return match?.[1] ? decodeURIComponent(match[1]) : undefined;
 }
 
+/** Reject release redirects that leave github.com (defense in depth for installers). */
 function assertGithubReleaseHost(url: string): void {
   let host: string;
   try {
@@ -138,6 +144,7 @@ export async function checkForUpdate(
   };
 }
 
+/** Infer install channel from the executable path (Homebrew Cellar, SEA binary, or npm). */
 export function detectUpdateSource(execPath = process.execPath): UpdateSource {
   const normalized = normalizePath(execPath);
   if (normalized.includes('/Cellar/mdgarden/')) return 'homebrew';
@@ -146,6 +153,7 @@ export function detectUpdateSource(execPath = process.execPath): UpdateSource {
   return 'npm';
 }
 
+/** Like `detectUpdateSource`, but resolves symlinks first (e.g. Homebrew shims). */
 export function getUpdateSource(execPath = process.execPath): UpdateSource {
   return detectUpdateSource(resolveRealPath(execPath));
 }
@@ -201,6 +209,7 @@ export async function decideUpdate(
   }
 }
 
+/** Build the shell/npm/brew command used to install or upgrade mdgarden. */
 export function buildUpdatePlan(
   execPath = process.execPath,
   platform = process.platform,
@@ -261,6 +270,7 @@ export function buildUpdatePlan(
   };
 }
 
+/** Spawn the update plan; detached plans (Windows SEA) return once the child has started. */
 export async function runUpdatePlan(plan: UpdatePlan): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const child = spawn(plan.command, plan.args, {

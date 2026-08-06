@@ -3,22 +3,22 @@
   "label": "Rosé",
   "hint": "Warm rose + plum, soft contrast",
   "fonts": {
-    "heading": "Inter, system-ui, -apple-system, sans-serif",
-    "body": "Inter, system-ui, -apple-system, sans-serif",
-    "code": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace"
+    "heading": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "body": "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "code": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
   },
   "colors": {
     "light": {
-      "background": "#fbf6f6",
+      "background": "#ffffff",
       "text": "#3a2b32",
-      "primary": "#a14a6b",
-      "accent": "#d98ca6",
-      "muted": "#7a6068",
-      "border": "#ecdde1",
-      "surface": "#ffffff"
+      "primary": "#9a5570",
+      "accent": "#c98aa0",
+      "muted": "#7a656c",
+      "border": "#ebe0e4",
+      "surface": "#f8f3f4"
     },
     "dark": {
-      "background": "#1b1417",
+      "background": "#1a1416",
       "text": "#f0e3e8",
       "primary": "#d98ca6",
       "accent": "#e0a7bd",

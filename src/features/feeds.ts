@@ -2,6 +2,7 @@ import { escapeHtml } from '../utils.js';
 import { withBase } from '../parser/links.js';
 import type { MdgardenConfig, Page } from '../types.js';
 
+/** Join a site `baseUrl` with a root-relative path for sitemap/RSS absolute URLs. */
 function abs(baseUrl: string, url: string): string {
   return `${baseUrl.replace(/\/$/, '')}${url}`;
 }

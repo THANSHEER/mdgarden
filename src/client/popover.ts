@@ -105,6 +105,7 @@ function renderPreviewCard(card: PreviewCard): string {
   ].join('');
 }
 
+/** Fetch a page and return a cached HTML preview card for the popover. */
 async function fetchPreview(href: string): Promise<string> {
   const cached = CACHE.get(href);
   if (cached) return cached;

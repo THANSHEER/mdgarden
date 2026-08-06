@@ -313,6 +313,7 @@ function redirectHtml(target: string): string {
   );
 }
 
+/** Populate each page's `backlinks` from outbound wikilink targets. */
 function computeBacklinks(pages: Page[], index: ReturnType<typeof buildSiteIndex>): void {
   for (const page of pages) {
     for (const targetSlug of page.links) {
@@ -368,6 +369,7 @@ type BuildCache = Record<string, CachedPage>;
 
 const CACHE_FILENAME = '.mdgarden-cache.json';
 
+/** Type-guard for a cache entry; older caches without `broken` are accepted as empty. */
 function isCachedPage(v: unknown): v is CachedPage {
   if (typeof v !== 'object' || v === null) return false;
   const page = v as CachedPage;
