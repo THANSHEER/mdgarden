@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,23 +15,36 @@ jobs:
         node-version: ['lts/-1', 'lts/*', 'latest']
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+
       # --ignore-scripts skips the `prepare` build; we run it explicitly below.
       # esbuild's platform binary is an optionalDependency, so it still installs.
-      - run: npm ci --ignore-scripts
-      - run: npm run typecheck
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        timeout-minutes: 10
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
       - name: Unit + integration tests (with coverage)
         run: npm run test:coverage
+
       - name: Smoke test (build the fixtures via the packaged CLI)
         run: |
           node dist/cli.js build test/fixtures -o /tmp/out
           test -f /tmp/out/index.html
           test -f /tmp/out/mdgarden.client.js
           test -f /tmp/out/katex/katex.min.css
+
       - name: Upload coverage report
         if: matrix.node-version == 'lts/*'
         uses: actions/upload-artifact@v4

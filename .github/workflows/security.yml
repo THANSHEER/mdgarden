@@ -1,0 +1,109 @@
+name: Security
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    # Run security checks daily at 2 AM UTC
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    name: Dependency Vulnerabilities
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for known vulnerabilities
+        run: npx snyk test --severity-threshold=high || true
+
+  codeql:
+    runs-on: ubuntu-latest
+    name: CodeQL Analysis
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - uses: github/codeql-action/autobuild@v3
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
+  permissions-check:
+    runs-on: ubuntu-latest
+    name: Check File Permissions
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for overly permissive files
+        run: |
+          # Check for world-writable files
+          if find . -type f -perm -002 ! -path './.git/*' -o -type d -perm -002 ! -path './.git/*' | grep -v node_modules; then
+            echo "Found world-writable files or directories"
+            exit 1
+          fi
+          echo "File permissions check passed"
+
+  license-check:
+    runs-on: ubuntu-latest
+    name: License Compliance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: npx license-report --csv | grep -i "GPL" && exit 1 || echo "License check passed"
+        continue-on-error: true
+
+  type-safety:
+    runs-on: ubuntu-latest
+    name: Type Safety & Linting
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: TypeScript strict check
+        run: npm run typecheck

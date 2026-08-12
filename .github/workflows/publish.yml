@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write # create the release + upload assets
+  id-token: write # OIDC for npm trusted publishing
 
 jobs:
   check-version:
@@ -49,18 +50,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # mint the OIDC token for npm Trusted Publishing
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.check-version.outputs.tag_name }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - run: npm ci --ignore-scripts
-      - run: npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
-      - run: npm run build
-      - run: npm publish --access public
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Upgrade npm (for OIDC support)
+        run: npm install -g npm@latest
+
+      - name: Build project
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
 
   # 2) Standalone binaries via Node SEA — one job per OS/arch (SEA can't cross-compile).
   binaries:
@@ -76,22 +87,32 @@ jobs:
           - { os: ubuntu-24.04-arm, target: linux-arm64, ext: tar.gz } # GitHub-hosted arm64 runner
           - { os: windows-2022, target: win-x64, ext: zip }
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.check-version.outputs.tag_name }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22 # actions/setup-node provides an official, SEA-capable Node
-      - run: npm ci --ignore-scripts
-      - run: npm run build:binary
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build binary
+        run: npm run build:binary
+
       - name: Package (unix)
         if: matrix.ext == 'tar.gz'
         run: tar -czf mdgarden-${{ matrix.target }}.tar.gz -C build mdgarden
+
       - name: Package (windows)
         if: matrix.ext == 'zip'
         shell: pwsh
         run: Compress-Archive -Path build/mdgarden.exe -DestinationPath mdgarden-${{ matrix.target }}.zip
+
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
@@ -104,13 +125,17 @@ jobs:
     needs: [check-version, binaries]
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.check-version.outputs.tag_name }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Download release tarballs
         env:
           GH_TOKEN: ${{ github.token }}
@@ -119,17 +144,21 @@ jobs:
           for t in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
             gh release download "${{ needs.check-version.outputs.tag_name }}" -p "mdgarden-$t.tar.gz" -D build/release
           done
-      - run: node scripts/update-formula.mjs build/release
+
+      - name: Update Homebrew formula
+        run: node scripts/update-formula.mjs build/release
+
       - name: Commit formula to tap
         env:
           TAP_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
         run: |
-          git clone "https://x-access-token:${TAP_TOKEN}@github.com/THANSHEER/homebrew-tap.git" tap
+          git clone "https://github.com/THANSHEER/homebrew-tap.git" tap
           mkdir -p tap/Formula
           cp packaging/homebrew/mdgarden.rb tap/Formula/mdgarden.rb
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local 'http.https://github.com/.extraheader' "Authorization: token ${TAP_TOKEN}"
           git add Formula/mdgarden.rb
           git commit -m "mdgarden ${{ needs.check-version.outputs.tag_name }}" || { echo "no changes"; exit 0; }
           git branch -M main          # works for a brand-new empty tap repo too
