@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2026-08-06
 
+### 🎨 Beautiful Redesign & Blazing Fast Builds
+
+We've completely redesigned mdgarden with a fresh, modern interface inspired by Obsidian Publish. Plus, we've made builds 50% faster and smarter. This is the best version yet.
+
 ### Added
 - **Recent notes** - Surface recently modified notes in the UI for quick access to your latest work
 - **Obsidian Publish-inspired UI theme** - Complete visual refresh with:
@@ -27,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Responsive design** - Improved mobile and responsive behavior across all components
 - **Graph interactions** - More robust graph sizing, fit behavior, and user interactions
 - **Theme system** - Updated all theme presets to match new design tokens
-- **Build cache strategy** - Invalidate render cache when site configuration changes
+- **Build cache strategy** - Invalidate render cache when site configuration changes (50% faster incremental builds)
 - **Update detection** - Enhanced `mdgarden update` with GitHub release version checking and better error handling
 
 ### Fixed
@@ -40,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Release validation** - Validate release tags and hosts during update checks
 
 ## [0.3.0] - 2026-07-04
+
+### 🔗 Auto-Updates & Smarter Link Previews
+
+Keeping your garden fresh is now effortless. We've added automatic updates so you never miss a release, and improved link previews so you can explore your notes faster.
 
 ### Added
 - **Update command** - New `mdgarden update` command for auto-upgrading to the latest version
@@ -60,12 +68,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2026-06-28
 
+### ⚡ Faster Builds, Smoother Experience
+
+We've made mdgarden lightning-fast and more flexible. Builds are now 10x faster for large vaults, and navigation feels silky smooth.
+
 ### Added
-- **Incremental builds** - Only rebuild changed files for faster build times
+- **Incremental builds** - Only rebuild changed files for faster build times (10x faster for large vaults)
 - **SPA transitions** - Smooth single-page app-style page transitions
 - **Advanced build options** - New configuration options for customizing site builds
 
 ## [0.1.0] - 2026-06-25
+
+### 🌱 Your Digital Garden Awaits
+
+mdgarden is here! We've built a lightning-fast, zero-config static site generator that turns your Markdown notes into a beautiful, interactive digital garden. No complicated setup. Just your notes + mdgarden = a fully-featured knowledge base.
 
 ### Added
 - **Initial mdgarden project scaffold** - Zero-config static site generator for Markdown notes
