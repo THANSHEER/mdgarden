@@ -37,3 +37,56 @@ The source code (`src/`) is strictly modularized by domain:
    Place tests in the `test/` directory using `vitest`. Ensure you test edge cases using the dummy markdown files in `test/fixtures/`.
 3. **Sanity-check UI/layout changes against the test vault.**
    `test_vault/` is a small sample vault checked into the repo for manual verification (wikilinks, callouts, math, code, media). Run `npm run vault:build` (one-shot) or `npm run vault:dev` (live reload at `http://localhost:3000`) to see real rendered output before calling a visual change done.
+
+## 📢 Release Notes Guidelines
+
+When generating release notes and titles for public announcements:
+
+### Release Title Format
+- **Pattern**: `[emoji] vX.Y.Z - [Value Proposition], [Key Benefit]`
+- **Example**: `🔒 v0.5.0 - Security Hardening, Automated Updates`
+- Keep to ~10-12 words maximum
+- Lead with user benefits, not technical details
+- Use 1-2 relevant emojis that reflect the release theme
+
+### Public Release Notes Format
+Structure release notes for **general users, not developers**:
+
+1. **Headline** - What's the big win for users? (1-2 sentences)
+2. **Key Benefits** - 3-5 user-facing improvements with emojis
+   - Focus on outcomes: faster, safer, easier—not implementation details
+   - Avoid technical jargon (no "OIDC," "CodeQL," "GitHub Actions")
+   - Explain *why* users care
+3. **Get Started** - Simple installation/upgrade command
+4. **Links** - Docs, issues, security contact
+
+### DO ✅
+- Use conversational language ("now automatic" vs "automated via Dependabot")
+- Highlight reliability, speed, and ease-of-use
+- Explain benefits in plain English
+- Lead with "what's new for you"
+- Use simple emoji to break up text
+- Keep each point to 1 sentence
+
+### DON'T ❌
+- Use technical acronyms (OIDC, CodeQL, YAML, CI/CD) in public notes
+- Explain implementation details
+- List every file changed
+- Use developer jargon
+- Make it longer than 1 page
+- Focus on internal process improvements
+
+### Content Translation Guide
+| Technical | Public-Friendly |
+|-----------|-----------------|
+| OIDC Trusted Publishing | Safer release process with auto-expiring tokens |
+| CodeQL + npm audit scanning | Continuous security checking |
+| Dependabot PRs | Automatic dependency updates |
+| Explicit job permissions | Tighter security controls |
+| git credential handling | Improved credential safety |
+
+### Tone
+- **Professional but warm** - You're talking to people who want reliable software
+- **Confident** - Celebrate improvements without apology
+- **User-centric** - Focus on what they get, not what we built
+- **Honest** - No breaking changes? Say so. No migration needed? Say so.

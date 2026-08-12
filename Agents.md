@@ -40,3 +40,34 @@ Only the repository owner performs version-control and release actions. Never st
 ## Commits & Pull Requests
 
 History uses short, imperative subjects; optional Conventional Commit prefixes such as `feat:` or `fix:` are encouraged. Keep commits focused. Pull requests should explain behavior and motivation, link issues, list commands run, and include before/after screenshots for visual changes. Do not commit generated `dist/`, `.vault-site/`, coverage, or local configuration.
+
+## 📢 Release Notes & Announcements
+
+### When Generating Release Notes
+Always create **two versions**:
+1. **Technical Release Notes** - For developers (details, architecture, dependencies)
+2. **Public Release Notes** - For general users (benefits, ease-of-use, reliability)
+
+### Public Release Guidelines
+The public version should:
+- ✅ Use simple language (no technical jargon)
+- ✅ Focus on user benefits ("faster," "safer," "easier")
+- ✅ Avoid implementation details
+- ✅ Keep it short (~1 page maximum)
+- ✅ Include simple installation/upgrade instructions
+- ✅ Explain why each change matters to users
+
+### Title Format
+`[emoji] vX.Y.Z - [Value Prop], [Key Benefit]`
+- Example: `🔒 v0.5.0 - Security & Automation Update`
+- 10-12 words max
+- Lead with user benefits first
+
+### Structure
+1. **Headline** (1-2 sentences) - Why should users upgrade?
+2. **Key Features** (3-5 bullets) - User-facing benefits with emojis
+3. **Technical Details** (optional) - For developers/advanced users
+4. **Getting Started** - Simple upgrade command
+5. **Links** - Docs, GitHub, security policy
+
+See [CLAUDE.md Release Notes Guidelines](./CLAUDE.md#-release-notes-guidelines) for detailed examples and translation rules.
