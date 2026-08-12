@@ -188,25 +188,18 @@ Runs at build-time to generate JSON files:
 
 ## Release Notes
 
-When asked to generate release notes:
+`CHANGELOG.md` is the single source of truth. GitHub Releases use the same
+content via `scripts/extract-release-notes.mjs`.
 
-### For Public Announcements
-- Use simple, non-technical language
-- Focus on user benefits ("faster," "safer," "easier")
-- Avoid technical acronyms and jargon
-- Keep to ~1 page
-- Include simple upgrade instructions
+When writing a release entry:
 
-Example: `🔒 v0.5.0 - Security & Automation Update`
-"Safer releases with automatic dependency updates and continuous security scanning."
+1. Add a `## [X.Y.Z] - YYYY-MM-DD` section at the top (below `[Unreleased]`)
+2. Title: `### [emoji] vX.Y.Z - Value Prop, Key Benefit`
+3. Write a 1-2 sentence summary
+4. Include only the sections that apply: **✨ New**, **🚀 Features**, **💡 Improvements**, **🐛 Bug Fixes**, **⚠️ Known Issues**
+5. End with the upgrade footer
 
-### For Developers
-- Explain implementation changes
-- List new APIs or breaking changes
-- Link to pull requests and issues
-- Include technical details
-
-See [CLAUDE.md Release Notes Guidelines](./CLAUDE.md#-release-notes-guidelines) for detailed patterns.
+See [CLAUDE.md Release Notes Guidelines](./CLAUDE.md#-release-notes-guidelines) for examples.
 
 ## Debugging Tips
 

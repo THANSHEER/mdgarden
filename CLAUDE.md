@@ -40,41 +40,46 @@ The source code (`src/`) is strictly modularized by domain:
 
 ## 📢 Release Notes Guidelines
 
-When generating release notes and titles for public announcements:
+`CHANGELOG.md` is the single source of truth. The same content is published to
+GitHub Releases via `scripts/extract-release-notes.mjs` during the release
+workflow.
 
 ### Release Title Format
 - **Pattern**: `[emoji] vX.Y.Z - [Value Proposition], [Key Benefit]`
 - **Example**: `🔒 v0.5.0 - Security Hardening, Automated Updates`
+- Put the title as the first `###` heading under each `## [X.Y.Z]` section
 - Keep to ~10-12 words maximum
 - Lead with user benefits, not technical details
 - Use 1-2 relevant emojis that reflect the release theme
 
-### Public Release Notes Format
-Structure release notes for **general users, not developers**:
+### Section Format (include only what applies)
+After the title, add a 1-2 sentence summary paragraph, then only the sections
+that have content for that release:
 
-1. **Headline** - What's the big win for users? (1-2 sentences)
-2. **Key Benefits** - 3-5 user-facing improvements with emojis
-   - Focus on outcomes: faster, safer, easier—not implementation details
-   - Avoid technical jargon (no "OIDC," "CodeQL," "GitHub Actions")
-   - Explain *why* users care
-3. **Get Started** - Simple installation/upgrade command
-4. **Links** - Docs, issues, security contact
+| Section | When to include |
+|---------|-----------------|
+| **✨ New** | Brand-new commands or major capabilities |
+| **🚀 Features** | User-facing feature additions |
+| **💡 Improvements** | Enhancements to existing behavior, performance, or design |
+| **🐛 Bug Fixes** | Resolved bugs |
+| **⚠️ Known Issues** | Known limitations (optional) |
 
-### DO ✅
+Omit empty sections entirely. End each release with an upgrade footer:
+
+```markdown
+---
+
+**Upgrade:** `npm install -g mdgarden@latest` or run `mdgarden update`
+
+No breaking changes.
+```
+
+### Writing Style
 - Use conversational language ("now automatic" vs "automated via Dependabot")
-- Highlight reliability, speed, and ease-of-use
-- Explain benefits in plain English
-- Lead with "what's new for you"
-- Use simple emoji to break up text
-- Keep each point to 1 sentence
-
-### DON'T ❌
-- Use technical acronyms (OIDC, CodeQL, YAML, CI/CD) in public notes
-- Explain implementation details
-- List every file changed
-- Use developer jargon
-- Make it longer than 1 page
-- Focus on internal process improvements
+- Focus on outcomes: faster, safer, easier — not implementation details
+- Avoid technical jargon (no "OIDC," "CodeQL," "GitHub Actions") in release text
+- Keep each bullet to 1 sentence
+- Keep the full release to ~1 page
 
 ### Content Translation Guide
 | Technical | Public-Friendly |

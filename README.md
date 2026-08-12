@@ -6,7 +6,7 @@
 
 **A fast, framework-free static site generator for Markdown notes.**
 
-Current release: `v0.5.0` — Security hardening, automated updates, improved CI/CD
+Current release: `v0.5.0` — Security hardening, automated updates, reliable builds
 
 Search, backlinks, tags, graph view, dark mode, math, and syntax highlighting.
 Zero config. No runtime framework.

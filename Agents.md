@@ -43,31 +43,20 @@ History uses short, imperative subjects; optional Conventional Commit prefixes s
 
 ## 📢 Release Notes & Announcements
 
-### When Generating Release Notes
-Always create **two versions**:
-1. **Technical Release Notes** - For developers (details, architecture, dependencies)
-2. **Public Release Notes** - For general users (benefits, ease-of-use, reliability)
+`CHANGELOG.md` is the single source of truth for release notes. The release
+workflow extracts the matching version section and publishes it to GitHub
+Releases automatically.
 
-### Public Release Guidelines
-The public version should:
-- ✅ Use simple language (no technical jargon)
-- ✅ Focus on user benefits ("faster," "safer," "easier")
-- ✅ Avoid implementation details
-- ✅ Keep it short (~1 page maximum)
-- ✅ Include simple installation/upgrade instructions
-- ✅ Explain why each change matters to users
+### Section Format (include only what applies)
+Each release gets one title (`### [emoji] vX.Y.Z - …`), a short summary, then
+only the sections with content:
 
-### Title Format
-`[emoji] vX.Y.Z - [Value Prop], [Key Benefit]`
-- Example: `🔒 v0.5.0 - Security & Automation Update`
-- 10-12 words max
-- Lead with user benefits first
+- **✨ New** — brand-new commands or major capabilities
+- **🚀 Features** — user-facing feature additions
+- **💡 Improvements** — enhancements to existing behavior
+- **🐛 Bug Fixes** — resolved bugs
+- **⚠️ Known Issues** — optional known limitations
 
-### Structure
-1. **Headline** (1-2 sentences) - Why should users upgrade?
-2. **Key Features** (3-5 bullets) - User-facing benefits with emojis
-3. **Technical Details** (optional) - For developers/advanced users
-4. **Getting Started** - Simple upgrade command
-5. **Links** - Docs, GitHub, security policy
+End with an upgrade footer (`npm install -g mdgarden@latest` or `mdgarden update`).
 
-See [CLAUDE.md Release Notes Guidelines](./CLAUDE.md#-release-notes-guidelines) for detailed examples and translation rules.
+See [CLAUDE.md Release Notes Guidelines](./CLAUDE.md#-release-notes-guidelines) for the full template and translation rules.

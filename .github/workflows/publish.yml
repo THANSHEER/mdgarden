@@ -37,7 +37,9 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git tag "$TAG"
             git push origin "$TAG"
-            gh release create "$TAG" --title "$TAG" --generate-notes
+            RELEASE_TITLE=$(node scripts/extract-release-notes.mjs "$VERSION" --title)
+            node scripts/extract-release-notes.mjs "$VERSION" > /tmp/release-notes.md
+            gh release create "$TAG" --title "$RELEASE_TITLE" --notes-file /tmp/release-notes.md
             echo "should_release=true" >> $GITHUB_OUTPUT
             echo "tag_name=$TAG" >> $GITHUB_OUTPUT
           fi
