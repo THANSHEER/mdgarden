@@ -2,8 +2,6 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased]
-
 ## [0.5.0] - 2026-08-12 - Security Hardening, Automated Updates
 
 Lightning-fast digital gardens, now more secure and reliable. This release
