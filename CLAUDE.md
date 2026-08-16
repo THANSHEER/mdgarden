@@ -42,27 +42,29 @@ The source code (`src/`) is strictly modularized by domain:
 
 `CHANGELOG.md` is the single source of truth. The same content is published to
 GitHub Releases via `scripts/extract-release-notes.mjs` during the release
-workflow.
+workflow — GitHub's auto-generated release notes are never used; the title and
+body always come from `CHANGELOG.md`.
 
 ### Release Title Format
-- **Pattern**: `[emoji] vX.Y.Z - [Value Proposition], [Key Benefit]`
-- **Example**: `🔒 v0.5.0 - Security Hardening, Automated Updates`
-- Put the title as the first `###` heading under each `## [X.Y.Z]` section
-- Keep to ~10-12 words maximum
+- **Pattern**: `## [X.Y.Z] - YYYY-MM-DD - [Value Proposition], [Key Benefit]`
+- **Example**: `## [0.5.0] - 2026-08-12 - Security Hardening, Automated Updates`
+- The trailing ` - Title` segment on the version header is optional but expected for
+  tagged releases; `scripts/extract-release-notes.mjs` turns it into the GitHub
+  release title (`vX.Y.Z - Value Proposition, Key Benefit`)
+- Keep the title to ~10-12 words maximum
 - Lead with user benefits, not technical details
-- Use 1-2 relevant emojis that reflect the release theme
 
 ### Section Format (include only what applies)
-After the title, add a 1-2 sentence summary paragraph, then only the sections
+After the header, add a 1-2 sentence summary paragraph, then only the sections
 that have content for that release:
 
 | Section | When to include |
 |---------|-----------------|
-| **✨ New** | Brand-new commands or major capabilities |
-| **🚀 Features** | User-facing feature additions |
-| **💡 Improvements** | Enhancements to existing behavior, performance, or design |
-| **🐛 Bug Fixes** | Resolved bugs |
-| **⚠️ Known Issues** | Known limitations (optional) |
+| **Features** | User-facing feature additions |
+| **Improvements** | Enhancements to existing behavior, performance, or design |
+| **Security** | Security vulnerabilities fixed or hardening added |
+| **Fixes** | Resolved bugs |
+| **Known Issues** | Known limitations (optional) |
 
 Omit empty sections entirely. End each release with an upgrade footer:
 
@@ -73,6 +75,39 @@ Omit empty sections entirely. End each release with an upgrade footer:
 
 No breaking changes.
 ```
+
+### Release Commands
+
+Update `CHANGELOG.md` for every release using this template:
+
+```markdown
+## [X.Y.Z] - YYYY-MM-DD - Value Proposition, Key Benefit
+
+Summary sentence.
+
+### Features
+- New feature description
+
+### Improvements
+- Improvement description
+
+### Security
+- Security vulnerability fixed (CVE-XXXX if applicable)
+
+### Fixes
+- Bug fix (#issue-number if applicable)
+```
+
+Only include a `CVE-XXXX` or `#issue-number` reference when one genuinely
+exists — never invent one to fit the template.
+
+### Version Numbers
+
+| Change type | Bump | Example |
+|---|---|---|
+| Features | MINOR | `1.0.0` → `1.1.0` |
+| Security / Fixes | PATCH | `1.0.0` → `1.0.1` |
+| Breaking changes | MAJOR | `1.0.0` → `2.0.0` |
 
 ### Writing Style
 - Use conversational language ("now automatic" vs "automated via Dependabot")

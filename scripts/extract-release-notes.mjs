@@ -1,9 +1,14 @@
 // Extract public release notes for a version from CHANGELOG.md.
 //
 //   node scripts/extract-release-notes.mjs <version>           # body (for gh --notes-file)
-//   node scripts/extract-release-notes.mjs <version> --title   # first ### heading
+//   node scripts/extract-release-notes.mjs <version> --title   # release title
 //
 // Version accepts "0.5.0" or "v0.5.0". Exits 1 if the section is missing.
+//
+// Expects a CHANGELOG.md header of the form:
+//   ## [X.Y.Z] - YYYY-MM-DD - Value Proposition, Key Benefit
+// The trailing " - Title" segment is optional; when present it becomes the
+// GitHub release title alongside the version (e.g. "v0.5.0 - Value Proposition").
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -29,29 +34,23 @@ if (!section) {
   process.exit(1);
 }
 
-const titleMatch = section.match(/^### (.+)$/m);
-
 if (wantTitle) {
-  if (!titleMatch) {
-    console.error(`No ### title found in changelog section for version ${version}`);
-    process.exit(1);
-  }
-  process.stdout.write(titleMatch[1].trim());
+  process.stdout.write(section.title);
 } else {
-  const body = titleMatch
-    ? section.slice(titleMatch.index + titleMatch[0].length).trimStart()
-    : section;
-  process.stdout.write(body);
+  process.stdout.write(section.body);
 }
 
 function extractSection(text, releaseVersion) {
-  const header = `## [${releaseVersion}]`;
-  const start = text.indexOf(header);
-  if (start === -1) return null;
+  const headerPattern = new RegExp(
+    `^## \\[${escapeRegExp(releaseVersion)}\\] - \\d{4}-\\d{2}-\\d{2}(?: - (.+))?$`,
+    'm'
+  );
+  const match = headerPattern.exec(text);
+  if (!match) return null;
 
-  const bodyStart = text.indexOf('\n', start);
-  if (bodyStart === -1) return null;
+  const title = match[1] ? `v${releaseVersion} - ${match[1].trim()}` : `v${releaseVersion}`;
 
+  const bodyStart = text.indexOf('\n', match.index);
   const rest = text.slice(bodyStart + 1);
   const nextRelease = rest.search(/\n## \[/);
   const globalFooter = rest.indexOf('\n---\n\nFor migration');
@@ -60,5 +59,9 @@ function extractSection(text, releaseVersion) {
   if (nextRelease !== -1) end = Math.min(end, nextRelease);
   if (globalFooter !== -1) end = Math.min(end, globalFooter);
 
-  return rest.slice(0, end).trimEnd();
+  return { title, body: rest.slice(0, end).trim() };
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
