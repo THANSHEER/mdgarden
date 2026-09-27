@@ -121,3 +121,79 @@ export function renderTagPage(ctx: RenderContext, entry: TagEntry): string {
     ctx,
   );
 }
+
+// ---------------------------------------------------------------------------
+// HTML Sitemap
+// ---------------------------------------------------------------------------
+
+/** Group pages alphabetically by first letter of title. */
+function buildAlphabeticalMap(pages: Page[]): Map<string, Page[]> {
+  const map = new Map<string, Page[]>();
+  const sorted = [...pages].sort((a, b) => a.title.localeCompare(b.title));
+  for (const page of sorted) {
+    const firstChar = (page.title[0] ?? '#').toUpperCase();
+    const group = /[A-Z]/.test(firstChar) ? firstChar : '#';
+    let list = map.get(group);
+    if (!list) {
+      list = [];
+      map.set(group, list);
+    }
+    list.push(page);
+  }
+  return map;
+}
+
+/** Render HTML sitemap page. */
+export function renderSitemapPage(ctx: RenderContext): string {
+  const { config } = ctx;
+  const eligiblePages = ctx.pages.filter(
+    (p) => p.frontmatter?.sitemap !== false && p.frontmatter?.noindex !== true,
+  );
+  const alphaMap = buildAlphabeticalMap(eligiblePages);
+  const letters = Array.from(alphaMap.keys()).sort((a, b) => {
+    if (a === '#') return 1;
+    if (b === '#') return -1;
+    return a.localeCompare(b);
+  });
+
+  const jumpLinks = letters
+    .map((l) => `<a class="tag" href="#letter-${escapeAttr(l)}">${escapeHtml(l)}</a>`)
+    .join(' ');
+
+  let groupsHtml = '';
+  for (const letter of letters) {
+    const pages = alphaMap.get(letter) ?? [];
+    const list = pages
+      .map((p) => {
+        const date = p.date ? ` <span class="page-meta">${escapeHtml(shortDate(p.date))}</span>` : '';
+        return `<li><a href="${escapeAttr(p.url)}">${escapeHtml(p.title)}</a>${date}</li>`;
+      })
+      .join('');
+    groupsHtml += `<section class="sitemap-group" id="letter-${escapeAttr(letter)}"><h2>${escapeHtml(letter)}</h2><ul class="page-list">${list}</ul></section>`;
+  }
+
+  const extraLinks: string[] = [];
+  if (config.features.tags) {
+    extraLinks.push(`<a class="tag" href="${escapeAttr(withBase('/tags/'))}">${escapeHtml(t('tags', config))}</a>`);
+  }
+  if (config.features.rss) {
+    extraLinks.push(`<a class="tag" href="${escapeAttr(withBase('/rss.xml'))}">RSS Feed</a>`);
+  }
+  extraLinks.push(`<a class="tag" href="${escapeAttr(withBase('/sitemap.xml'))}">sitemap.xml</a>`);
+
+  const intro = `<p>${eligiblePages.length} notes published in this garden.</p>`;
+  const navBar = `<div class="tag-cloud sitemap-nav">${extraLinks.join(' ')}${jumpLinks ? ` &middot; ${jumpLinks}` : ''}</div>`;
+  const body = `${intro}${navBar}${groupsHtml || `<p>${escapeHtml(t('noNotes', config))}</p>`}`;
+
+  const title = t('sitemap', config);
+  return renderDocument(
+    {
+      title,
+      description: `Site map and overview of notes on ${config.site.title}`,
+      bodyHtml: body,
+      url: withBase('/sitemap/'),
+      kind: 'sitemap',
+    },
+    ctx,
+  );
+}

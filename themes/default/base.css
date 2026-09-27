@@ -1005,6 +1005,21 @@ a.folder-label:hover {
   gap: 0.4rem;
 }
 
+/* ---- Sitemap page ------------------------------------------------------- */
+
+.sitemap-nav {
+  margin-bottom: 2rem;
+}
+.sitemap-group {
+  margin-bottom: 2rem;
+}
+.sitemap-group h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* ---- Search ------------------------------------------------------------- */
 
 .search-modal {

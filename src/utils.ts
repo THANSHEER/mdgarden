@@ -36,6 +36,12 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
+/** Format a date or timestamp to ISO YYYY-MM-DD. */
+export function isoDate(value: string | number | Date): string {
+  const d = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(d.getTime()) ? String(value) : d.toISOString().slice(0, 10);
+}
+
 // ---------------------------------------------------------------------------
 // UI strings (i18n)
 // ---------------------------------------------------------------------------
@@ -66,6 +72,8 @@ export const UI = {
   searchResults: 'Search results',
   graphBrowse: 'Browse graph links',
   graphInstructions: 'Interactive note graph. Use the link list below for keyboard navigation.',
+  sitemap: 'Sitemap',
+  allNotes: 'All Notes',
 } as const;
 
 export type UIKey = keyof typeof UI;

@@ -16,7 +16,7 @@ import { escapeAttr, escapeHtml } from '../utils.js';
 import { createMarkdown } from '../parser/markdown.js';
 import { collectCodeLangs, createCodeHighlighter, type HighlightFn } from '../parser/highlight.js';
 import { prepareBodyHtml, renderBody, renderDocument, type RenderContext } from '../parser/render.js';
-import { renderHomePage, renderNotFoundPage, buildTagMap, renderTagIndex, renderTagPage } from '../pages/generated.js';
+import { renderHomePage, renderNotFoundPage, buildTagMap, renderTagIndex, renderTagPage, renderSitemapPage } from '../pages/generated.js';
 import { buildSearchIndex, buildGraph } from '../features/data.js';
 import { buildSitemap, buildRss, buildRobots } from '../features/feeds.js';
 import { buildStyles } from '../parser/theme.js';
@@ -228,6 +228,10 @@ export async function build(opts: BuildOptions = {}): Promise<BuildResult> {
 
   // Feeds.
   if (config.features.sitemap) {
+    if (!realSlugs.has('sitemap')) {
+      sitemapExtraUrls.push(withBase('/sitemap/'));
+      await writeOut(outDir, 'sitemap/index.html', renderSitemapPage(ctx));
+    }
     await writeOut(outDir, 'sitemap.xml', buildSitemap(pages, config.site.baseUrl, sitemapExtraUrls));
     await writeOut(outDir, 'robots.txt', buildRobots(config));
   }

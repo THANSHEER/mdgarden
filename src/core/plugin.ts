@@ -3,7 +3,7 @@
 import type MarkdownIt from 'markdown-it';
 import type { MdgardenConfig, Page } from '../types.js';
 
-export type PageKind = 'note' | 'home' | 'tag' | 'folder' | '404';
+export type PageKind = 'note' | 'home' | 'tag' | 'folder' | '404' | 'sitemap';
 
 /** What the head/bodyEnd hooks learn about the document being rendered. */
 export interface RenderInfo {

@@ -40,6 +40,14 @@ export function withBase(url: string): string {
   return `${basePath}${url}`;
 }
 
+/** Join a site baseUrl with a root-relative path for absolute URLs. */
+export function absUrl(baseUrl: string, url: string): string {
+  if (!baseUrl) return url;
+  const cleanBase = baseUrl.replace(/\/+$/, '');
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  return `${cleanBase}${cleanUrl}`;
+}
+
 /** Slugify single segment. */
 export function slugifySegment(segment: string): string {
   return segment
