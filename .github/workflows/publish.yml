@@ -90,7 +90,7 @@ jobs:
           - { os: windows-2022, target: win-x64, ext: zip }
     runs-on: ${{ matrix.os }}
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,6 +117,8 @@ jobs:
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.check-version.outputs.tag_name }}
           files: mdgarden-${{ matrix.target }}.${{ matrix.ext }}
