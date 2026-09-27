@@ -181,7 +181,7 @@ export function renderDocument(opts: DocumentOptions, ctx: RenderContext): strin
 <meta name="description" content="${escapeAttr(description)}">
 <meta name="generator" content="mdgarden ${escapeAttr(VERSION)}">
 <link rel="icon" href="${escapeAttr(faviconHref)}">
-<link rel="stylesheet" href="${escapeAttr(ctx.cssHref)}">
+${config.features.rss ? `<link rel="alternate" type="application/rss+xml" title="${escapeAttr(config.site.title)}" href="${escapeAttr(withBase('/rss.xml'))}">\n` : ''}${config.features.sitemap ? `<link rel="sitemap" type="application/xml" title="Sitemap" href="${escapeAttr(withBase('/sitemap.xml'))}">\n` : ''}<link rel="stylesheet" href="${escapeAttr(ctx.cssHref)}">
 ${ctx.mathCssHref ? `<link rel="stylesheet" href="${escapeAttr(ctx.mathCssHref)}">` : ''}
 
 ${pluginHead}

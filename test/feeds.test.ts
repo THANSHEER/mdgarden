@@ -46,6 +46,55 @@ describe('buildSitemap', () => {
     const xml = buildSitemap([page({ url: '/nodate/' })], 'https://example.com');
     expect(xml).not.toContain('<lastmod>');
   });
+
+  it('falls back to mtimeMs when date is not set', () => {
+    const mtime = new Date('2026-06-15T12:00:00Z').getTime();
+    const xml = buildSitemap([page({ url: '/mtime-note/', mtimeMs: mtime })], 'https://example.com');
+    expect(xml).toContain('<lastmod>2026-06-15</lastmod>');
+  });
+
+  it('includes smart defaults for priority and changefreq', () => {
+    const xml = buildSitemap(
+      [
+        page({ url: '/', slug: '' }),
+        page({ url: '/notes/intro/', slug: 'notes/intro' }),
+      ],
+      'https://example.com',
+      ['/tags/'],
+    );
+    expect(xml).toContain('<loc>https://example.com/</loc><changefreq>daily</changefreq><priority>1.0</priority>');
+    expect(xml).toContain('<loc>https://example.com/notes/intro/</loc><changefreq>weekly</changefreq><priority>0.8</priority>');
+    expect(xml).toContain('<loc>https://example.com/tags/</loc><changefreq>weekly</changefreq><priority>0.5</priority>');
+  });
+
+  it('respects frontmatter priority and changefreq overrides', () => {
+    const xml = buildSitemap(
+      [
+        page({
+          url: '/custom/',
+          slug: 'custom',
+          frontmatter: { priority: 0.9, changefreq: 'monthly' },
+        }),
+      ],
+      'https://example.com',
+    );
+    expect(xml).toContain('<priority>0.9</priority>');
+    expect(xml).toContain('<changefreq>monthly</changefreq>');
+  });
+
+  it('excludes pages with sitemap: false or noindex: true', () => {
+    const xml = buildSitemap(
+      [
+        page({ url: '/visible/', slug: 'visible' }),
+        page({ url: '/hidden-sitemap/', slug: 'hidden-sitemap', frontmatter: { sitemap: false } }),
+        page({ url: '/hidden-noindex/', slug: 'hidden-noindex', frontmatter: { noindex: true } }),
+      ],
+      'https://example.com',
+    );
+    expect(xml).toContain('/visible/');
+    expect(xml).not.toContain('/hidden-sitemap/');
+    expect(xml).not.toContain('/hidden-noindex/');
+  });
 });
 
 describe('buildRss', () => {

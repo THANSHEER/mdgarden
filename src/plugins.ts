@@ -1,7 +1,7 @@
 // Built-in plugins: Open Graph/Twitter cards, and Giscus comments.
 
-import { withBase } from './parser/links.js';
-import { escapeAttr } from './utils.js';
+import { absUrl, withBase } from './parser/links.js';
+import { escapeAttr, isoDate } from './utils.js';
 import type { MdgardenPlugin, RenderInfo } from './core/plugin.js';
 import type { MdgardenConfig } from './types.js';
 
@@ -23,8 +23,7 @@ export function builtinPlugins(config: MdgardenConfig): MdgardenPlugin[] {
 /** Make a URL absolute against `site.baseUrl` (left relative if no baseUrl). */
 function absoluteUrl(config: MdgardenConfig, url: string): string {
   if (/^https?:\/\//i.test(url)) return url;
-  const base = config.site.baseUrl.replace(/\/$/, '');
-  return base ? `${base}${url}` : url;
+  return absUrl(config.site.baseUrl, url);
 }
 
 /** Resolve the social image for a document (frontmatter → site default). */
@@ -44,25 +43,68 @@ function ogPlugin(): MdgardenPlugin {
   return {
     name: 'og',
     head(info: RenderInfo, config: MdgardenConfig) {
+      const fm = info.frontmatter ?? {};
       const title = info.title;
       const desc = info.description;
       const url = absoluteUrl(config, info.url);
       const img = ogImage(info, config);
-      const tags = [
-        `<link rel="canonical" href="${escapeAttr(url)}">`,
+      const isArticle = info.kind === 'note';
+
+      const tags: string[] = [];
+
+      // Robots meta tag
+      const isNoIndex = fm.noindex === true || fm.sitemap === false || info.kind === '404';
+      if (typeof fm.robots === 'string') {
+        tags.push(`<meta name="robots" content="${escapeAttr(fm.robots)}">`);
+      } else if (isNoIndex) {
+        tags.push('<meta name="robots" content="noindex, nofollow">');
+      }
+
+      // Canonical link
+      const canonicalUrl = typeof fm.canonical === 'string' ? fm.canonical : url;
+      if (fm.canonical !== false && canonicalUrl) {
+        tags.push(`<link rel="canonical" href="${escapeAttr(canonicalUrl)}">`);
+      }
+
+      // Author meta
+      const author = typeof fm.author === 'string' ? fm.author : config.site.author;
+      if (author) {
+        tags.push(`<meta name="author" content="${escapeAttr(author)}">`);
+      }
+
+      // Open Graph tags
+      tags.push(
         `<meta property="og:title" content="${escapeAttr(title)}">`,
         `<meta property="og:description" content="${escapeAttr(desc)}">`,
-        `<meta property="og:type" content="${info.kind === 'note' ? 'article' : 'website'}">`,
+        `<meta property="og:type" content="${isArticle ? 'article' : 'website'}">`,
         `<meta property="og:url" content="${escapeAttr(url)}">`,
         `<meta property="og:site_name" content="${escapeAttr(config.site.title)}">`,
+      );
+
+      if (isArticle) {
+        if (typeof fm.date === 'string') {
+          const dateStr = isoDate(fm.date);
+          tags.push(`<meta property="article:published_time" content="${escapeAttr(dateStr)}">`);
+        }
+        if (Array.isArray(fm.tags)) {
+          for (const tag of fm.tags) {
+            tags.push(`<meta property="article:tag" content="${escapeAttr(String(tag))}">`);
+          }
+        }
+      }
+
+      // Twitter tags
+      tags.push(
         `<meta name="twitter:card" content="${img ? 'summary_large_image' : 'summary'}">`,
         `<meta name="twitter:title" content="${escapeAttr(title)}">`,
         `<meta name="twitter:description" content="${escapeAttr(desc)}">`,
-      ];
+      );
+
       if (img) {
         tags.push(`<meta property="og:image" content="${escapeAttr(img)}">`);
         tags.push(`<meta name="twitter:image" content="${escapeAttr(img)}">`);
       }
+
       return `\n${tags.join('\n')}`;
     },
   };

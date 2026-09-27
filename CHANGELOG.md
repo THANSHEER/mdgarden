@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.6.0] - 2026-09-27 - Enhanced Sitemap, SEO & Discoverability
+
+Boost your digital garden's visibility across search engines and social platforms.
+This release introduces automated HTML visual sitemaps, richer XML sitemaps with
+smart priority/changefreq tags, comprehensive Open Graph and Twitter Card metadata,
+and RSS autodiscovery.
+
+### Features
+- **Visual HTML Sitemap (`/sitemap/`)** — Auto-generated garden directory organizing all notes alphabetically (A–Z) with jump navigation, publication dates, and quick links to tags and feeds
+- **Supercharged XML Sitemap** — Added `<priority>` and `<changefreq>` tags with smart defaults (1.0/daily for home, 0.8/weekly for notes, 0.5/weekly for indexes), custom frontmatter overrides, and automatic `mtime` fallback for `<lastmod>`
+- **Enhanced SEO & Social Metadata** — Automatic Open Graph (`og:*`), Twitter Cards, author, and article publication metadata for link previews on Discord, Slack, X, and LinkedIn
+- **RSS & Sitemap Discovery Tags** — Standard `<link rel="alternate" type="application/rss+xml">` and `<link rel="sitemap" type="application/xml">` in document `<head>` for instant feed-reader and crawler autodiscovery
+- **Selective Indexing Controls** — Added `sitemap: false` and `noindex: true` frontmatter controls to easily omit private notes from sitemaps and search engines
+
+---
+
+**Upgrade:** `npm install -g mdgarden@latest` or run `mdgarden update`
+
+No breaking changes.
+
 ## [0.5.0] - 2026-08-12 - Security Hardening, Automated Updates
 
 Lightning-fast digital gardens, now more secure and reliable. This release
