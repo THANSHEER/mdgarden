@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -52,3 +54,57 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 14
+
+  verify-binary:
+    name: Verify Standalone Binary Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build standalone binary
+        run: npm run build:binary
+
+      - name: Test standalone binary executable
+        shell: bash
+        run: |
+          if [ -f "build/mdgarden" ]; then
+            ./build/mdgarden --version
+          elif [ -f "build/mdgarden.exe" ]; then
+            ./build/mdgarden.exe --version
+          else
+            echo "Binary output not found in build/"
+            exit 1
+          fi
+
+  verify-package:
+    name: Verify NPM Packaging Dry-Run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Check package tarball
+        run: npm run pack:check
